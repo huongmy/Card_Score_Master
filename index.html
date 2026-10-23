@@ -6,7 +6,7 @@
   <title>Sổ Tính Điểm Đánh Bài - Card Score Master</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
-  <meta name="theme-color" content="#059669">
+  <meta id="metaThemeColor" name="theme-color" content="#059669">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Tính Điểm Bài">
@@ -96,8 +96,8 @@
         
         <!-- Logo & Title -->
         <div class="flex items-center gap-2.5 shrink-0">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs">
-            ♠
+          <div id="appLogoBadge" class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs transition-all">
+            <span id="appLogoIcon">♠</span>
           </div>
           <div>
             <h1 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight leading-none" id="lblAppTitle">Sổ Tính Điểm Bài</h1>
@@ -179,13 +179,13 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div id="summaryIconBadge" class="p-1 rounded-md bg-emerald-100 text-emerald-800">
+          <div id="summaryIconBadge" class="p-1 rounded-md bg-emerald-100 text-emerald-800 transition-colors">
             <i id="summaryDrawerIcon" data-lucide="wallet" class="w-4 h-4"></i>
           </div>
           <h2 class="text-xs sm:text-sm font-bold text-slate-900" id="lblScheduleTitle">Lịch Trình Chuyển Tiền (Ai trả ai)</h2>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="copySummaryMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
+          <button id="btnCopySummary" onclick="copySummaryMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
             <span id="lblCopyZaloBtn">Sao chép gửi Zalo</span>
           </button>
@@ -206,7 +206,7 @@
 
     <!-- ================= KHU VỰC NHẬP NHANH TRÊN ĐIỆN THOẠI (MOBILE QUICK PAD) ================= -->
     <!-- Hiển thị trên màn hình nhỏ để bấm phím to rõ, không cần gõ vào bảng hẹp -->
-    <div class="block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white">
+    <div id="mobileQuickPadBox" class="block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white transition-all">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-1.5">
           <span id="mobileRoundBadge" class="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs">
@@ -446,7 +446,7 @@
         <button onclick="closeEditRoundModal()" id="btnCancelEditText" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
           Hủy bỏ
         </button>
-        <button onclick="saveEditRoundFromModal()" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1">
+        <button id="btnSaveEditModal" onclick="saveEditRoundFromModal()" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1">
           <i data-lucide="check" class="w-3.5 h-3.5"></i>
           <span id="btnSaveEditText">Lưu thay đổi</span>
         </button>
@@ -463,6 +463,8 @@
       vi: {
         appTitle: "Sổ Tính Điểm Bài",
         appSubtitle: "Chuẩn định dạng Excel • Tự động tính real-time",
+        appSubtitleZeroSum: "Chế độ Bù trừ • Tổng điểm = 0 • Tự chia tiền",
+        appSubtitleAccumulate: "Chế độ Đua điểm • Tích lũy qua từng ván • Bảng xếp hạng 🏆",
         modeZeroSum: "Ăn thua bù trừ",
         modeAccumulate: "Cộng dồn đua điểm",
         settlementBtn: "Chia tiền",
@@ -534,6 +536,8 @@
       en: {
         appTitle: "Card Score Master",
         appSubtitle: "Excel layout • Real-time auto calculation",
+        appSubtitleZeroSum: "Net Balance Mode • Sum = 0 • Auto Settlement",
+        appSubtitleAccumulate: "Points Race Mode • Cumulative Leaderboard 🏆",
         modeZeroSum: "Net Balance (±0)",
         modeAccumulate: "Points Race",
         settlementBtn: "Settlement",
@@ -724,15 +728,17 @@
       const isEn = appState.lang === 'en';
       document.documentElement.lang = appState.lang;
 
-      // Nút gạt ngôn ngữ
+      // Nút gạt ngôn ngữ theo màu chủ đạo của chế độ
+      const isZeroSum = appState.mode !== 'accumulate';
+      const activeLangColor = isZeroSum ? 'text-emerald-700' : 'text-indigo-700';
       const btnVi = document.getElementById('btnLangVi');
       const btnEn = document.getElementById('btnLangEn');
       if (btnVi && btnEn) {
         if (isEn) {
-          btnEn.className = 'px-2 py-0.5 rounded text-[11px] bg-white text-emerald-700 shadow-2xs transition font-bold';
+          btnEn.className = `px-2 py-0.5 rounded text-[11px] bg-white ${activeLangColor} shadow-2xs transition font-bold`;
           btnVi.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
         } else {
-          btnVi.className = 'px-2 py-0.5 rounded text-[11px] bg-white text-emerald-700 shadow-2xs transition font-bold';
+          btnVi.className = `px-2 py-0.5 rounded text-[11px] bg-white ${activeLangColor} shadow-2xs transition font-bold`;
           btnEn.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
         }
       }
@@ -748,7 +754,7 @@
       };
 
       setTxt('lblAppTitle', t('appTitle'));
-      setTxt('lblAppSubtitle', t('appSubtitle'));
+      setTxt('lblAppSubtitle', isZeroSum ? t('appSubtitleZeroSum') : t('appSubtitleAccumulate'));
       setTxt('modeBtnZeroSum', t('modeZeroSum'));
       setTxt('modeBtnAccumulate', t('modeAccumulate'));
       setTxt('modeBtnZeroSumMobile', t('modeZeroSum'));
@@ -857,38 +863,64 @@
     function updateModeUI() {
       const isZeroSum = appState.mode !== 'accumulate';
       
-      // Desktop buttons
+      // 1. Cập nhật màu thanh trạng thái (status bar) trên điện thoại
+      const metaTheme = document.getElementById('metaThemeColor');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', isZeroSum ? '#059669' : '#4F46E5');
+      }
+
+      // 2. Logo Badge, Icon và Phụ đề
+      const appLogoBadge = document.getElementById('appLogoBadge');
+      const appLogoIcon = document.getElementById('appLogoIcon');
+      const lblAppSubtitle = document.getElementById('lblAppSubtitle');
+      
+      if (appLogoBadge) {
+        appLogoBadge.className = isZeroSum
+          ? 'w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs transition-all'
+          : 'w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-base shadow-xs transition-all';
+      }
+      if (appLogoIcon) {
+        appLogoIcon.textContent = isZeroSum ? '♠' : '🏆';
+      }
+      if (lblAppSubtitle) {
+        lblAppSubtitle.textContent = isZeroSum ? t('appSubtitleZeroSum') : t('appSubtitleAccumulate');
+      }
+
+      // 3. Nút chuyển chế độ trên Desktop & Mobile
       const btnZeroSum = document.getElementById('modeBtnZeroSum');
       const btnAccumulate = document.getElementById('modeBtnAccumulate');
-      
-      // Mobile buttons
       const btnZeroSumM = document.getElementById('modeBtnZeroSumMobile');
       const btnAccumulateM = document.getElementById('modeBtnAccumulateMobile');
 
-      const activeBtnClass = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
-      const inactiveBtnClass = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
-      const activeBtnMClass = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
-      const inactiveBtnMClass = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
+      const activeZeroSumClass = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs border border-emerald-300 transition';
+      const activeAccumulateClass = 'px-2.5 py-1 rounded-lg font-bold text-xs text-indigo-800 bg-white shadow-xs border border-indigo-300 transition';
+      const inactiveDesktopClass = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-500 hover:text-slate-900 transition';
+
+      const activeZeroSumMClass = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs border border-emerald-300 transition';
+      const activeAccumulateMClass = 'px-2 py-1 rounded-md font-bold text-[11px] text-indigo-800 bg-white shadow-xs border border-indigo-300 transition';
+      const inactiveMobileClass = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-500 hover:text-slate-900 transition';
 
       if (isZeroSum) {
-        if (btnZeroSum) btnZeroSum.className = activeBtnClass;
-        if (btnAccumulate) btnAccumulate.className = inactiveBtnClass;
-        if (btnZeroSumM) btnZeroSumM.className = activeBtnMClass;
-        if (btnAccumulateM) btnAccumulateM.className = inactiveBtnMClass;
+        if (btnZeroSum) btnZeroSum.className = activeZeroSumClass;
+        if (btnAccumulate) btnAccumulate.className = inactiveDesktopClass;
+        if (btnZeroSumM) btnZeroSumM.className = activeZeroSumMClass;
+        if (btnAccumulateM) btnAccumulateM.className = inactiveMobileClass;
       } else {
-        if (btnAccumulate) btnAccumulate.className = activeBtnClass;
-        if (btnZeroSum) btnZeroSum.className = inactiveBtnClass;
-        if (btnAccumulateM) btnAccumulateM.className = activeBtnMClass;
-        if (btnZeroSumM) btnZeroSumM.className = inactiveBtnMClass;
+        if (btnAccumulate) btnAccumulate.className = activeAccumulateClass;
+        if (btnZeroSum) btnZeroSum.className = inactiveDesktopClass;
+        if (btnAccumulateM) btnAccumulateM.className = activeAccumulateMClass;
+        if (btnZeroSumM) btnZeroSumM.className = inactiveMobileClass;
       }
 
-      // Cập nhật nhãn và icon nút Tổng kết / Bảng xếp hạng
+      // 4. Cập nhật nhãn và icon nút Tổng kết / Bảng xếp hạng & Drawer
       const summaryBtnIcon = document.getElementById('summaryBtnIcon');
       const summaryBtnIconM = document.getElementById('summaryBtnIconMobile');
       const lblSettlement = document.getElementById('lblSettlementBtn');
       const lblSettlementM = document.getElementById('lblSettlementBtnMobile');
       const summaryDrawerIcon = document.getElementById('summaryDrawerIcon');
       const lblScheduleTitle = document.getElementById('lblScheduleTitle');
+      const summaryIconBadge = document.getElementById('summaryIconBadge');
+      const btnCopySummary = document.getElementById('btnCopySummary');
 
       const btnText = isZeroSum ? t('settlementBtn') : t('leaderboardBtn');
       const drawerTitle = isZeroSum ? t('scheduleTitle') : t('leaderboardTitle');
@@ -899,11 +931,74 @@
       if (lblSettlementM) lblSettlementM.textContent = btnText;
       if (lblScheduleTitle) lblScheduleTitle.textContent = drawerTitle;
 
-      if (summaryBtnIcon) summaryBtnIcon.setAttribute('data-lucide', iconName);
-      if (summaryBtnIconM) summaryBtnIconM.setAttribute('data-lucide', iconName);
+      if (summaryBtnIcon) {
+        summaryBtnIcon.setAttribute('data-lucide', iconName);
+        summaryBtnIcon.className = isZeroSum ? 'w-3.5 h-3.5 text-emerald-400' : 'w-3.5 h-3.5 text-amber-400';
+      }
+      if (summaryBtnIconM) {
+        summaryBtnIconM.setAttribute('data-lucide', iconName);
+        summaryBtnIconM.className = isZeroSum ? 'w-3 h-3 text-emerald-400' : 'w-3 h-3 text-amber-400';
+      }
       if (summaryDrawerIcon) summaryDrawerIcon.setAttribute('data-lucide', drawerIconName);
 
-      // Ẩn/Hiện nút tự cân trên Mobile và trên Bảng
+      if (summaryIconBadge) {
+        summaryIconBadge.className = isZeroSum
+          ? 'p-1 rounded-md bg-emerald-100 text-emerald-800 transition-colors'
+          : 'p-1 rounded-md bg-indigo-100 text-indigo-800 transition-colors';
+      }
+      if (btnCopySummary) {
+        btnCopySummary.className = isZeroSum
+          ? 'flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition'
+          : 'flex items-center gap-1 text-[11px] sm:text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-bold px-2.5 py-1 rounded-lg transition';
+      }
+
+      // 5. Khung nhập nhanh trên Điện thoại (Mobile Quick Pad)
+      const quickPadBox = document.getElementById('mobileQuickPadBox');
+      const mobileRoundBadge = document.getElementById('mobileRoundBadge');
+      const btnCommitMobile = document.getElementById('btnCommitRoundMobile');
+
+      if (quickPadBox) {
+        quickPadBox.className = isZeroSum
+          ? 'block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white transition-all'
+          : 'block lg:hidden bg-white border border-indigo-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-indigo-50/50 to-white transition-all';
+      }
+      if (mobileRoundBadge) {
+        mobileRoundBadge.className = isZeroSum
+          ? 'px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs'
+          : 'px-2 py-0.5 rounded-md bg-indigo-600 text-white font-mono font-bold text-xs';
+      }
+      if (btnCommitMobile) {
+        const isDimmed = btnCommitMobile.classList.contains('opacity-60');
+        const dimClass = isDimmed ? ' opacity-60' : '';
+        btnCommitMobile.className = isZeroSum
+          ? `flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5${dimClass}`
+          : `flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5${dimClass}`;
+      }
+
+      // 6. Hàng nhập ván mới trên Bảng (Active Row)
+      const activeRow = document.getElementById('activeInputRow');
+      const activeBadge = document.getElementById('activeRoundNoBadge');
+      const btnCommitTable = document.getElementById('btnCommitRoundTable');
+
+      if (activeRow) {
+        activeRow.className = isZeroSum
+          ? 'hidden lg:table-row bg-emerald-50/40 border-b-2 border-emerald-500/80 transition-colors'
+          : 'hidden lg:table-row bg-indigo-50/40 border-b-2 border-indigo-500/80 transition-colors';
+      }
+      if (activeBadge) {
+        activeBadge.className = isZeroSum
+          ? 'inline-block px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold text-xs shadow-2xs font-mono'
+          : 'inline-block px-1.5 py-0.5 rounded bg-indigo-600 text-white font-bold text-xs shadow-2xs font-mono';
+      }
+      if (btnCommitTable) {
+        const isDimmed = btnCommitTable.classList.contains('opacity-60');
+        const dimClass = isDimmed ? ' opacity-60' : '';
+        btnCommitTable.className = isZeroSum
+          ? `px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5${dimClass}`
+          : `px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5${dimClass}`;
+      }
+
+      // 7. Ẩn/Hiện nút tự cân trên Mobile và trên Bảng
       const btnAutoMobile = document.getElementById('btnAutoBalanceMobile');
       const btnAutoTable = document.getElementById('btnAutoBalanceTable');
       const badgeMobile = document.getElementById('mobileChecksumBadge');
@@ -921,10 +1016,33 @@
         else badgeMobile.classList.add('hidden');
       }
 
-      // Cập nhật ghi chú chân bảng
+      // 8. Cập nhật ghi chú chân bảng
       const legendChecksum = document.getElementById('legendChecksumText');
       if (legendChecksum) {
         legendChecksum.textContent = isZeroSum ? t('legendChecksumZeroSum') : t('legendChecksumAccumulate');
+      }
+
+      // 9. Nút Lưu trong Modal Sửa Điểm
+      const btnSaveEditModal = document.getElementById('btnSaveEditModal');
+      if (btnSaveEditModal) {
+        btnSaveEditModal.className = isZeroSum
+          ? 'px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1'
+          : 'px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm flex items-center gap-1';
+      }
+
+      // 10. Đồng bộ màu nút đổi ngôn ngữ
+      const isEn = appState.lang === 'en';
+      const activeLangColor = isZeroSum ? 'text-emerald-700' : 'text-indigo-700';
+      const btnVi = document.getElementById('btnLangVi');
+      const btnEn = document.getElementById('btnLangEn');
+      if (btnVi && btnEn) {
+        if (isEn) {
+          btnEn.className = `px-2 py-0.5 rounded text-[11px] bg-white ${activeLangColor} shadow-2xs transition font-bold`;
+          btnVi.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
+        } else {
+          btnVi.className = `px-2 py-0.5 rounded text-[11px] bg-white ${activeLangColor} shadow-2xs transition font-bold`;
+          btnEn.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
+        }
       }
 
       lucide.createIcons();
@@ -996,8 +1114,15 @@
       if (lblTotalRow) lblTotalRow.textContent = t('colTotal');
 
       const eyeIconName = isVisible ? 'eye' : 'eye-off';
-      if (eyeHeader) eyeHeader.setAttribute('data-lucide', eyeIconName);
-      if (eyeTable) eyeTable.setAttribute('data-lucide', eyeIconName);
+      const eyeColor = isAccumulate ? 'text-indigo-600' : 'text-emerald-600';
+      if (eyeHeader) {
+        eyeHeader.setAttribute('data-lucide', eyeIconName);
+        eyeHeader.className = `w-3.5 h-3.5 ${eyeColor}`;
+      }
+      if (eyeTable) {
+        eyeTable.setAttribute('data-lucide', eyeIconName);
+        eyeTable.className = `w-3.5 h-3.5 ${eyeColor}`;
+      }
       if (eyeText) eyeText.textContent = isVisible ? t('hidePoints') : t('showPoints');
 
       // Kiểu viền hàng tổng (Không kẻ dọc, viền ngang mờ tinh tế)
@@ -1031,12 +1156,12 @@
 
         let cellBg = !isVisible ? 'bg-slate-50' :
           isLeader ? 'bg-amber-100/70 border-b-2 border-amber-400' :
-          isAccumulate ? (isPos ? 'bg-emerald-50/40' : 'bg-slate-50') :
+          isAccumulate ? (isPos ? 'bg-indigo-50/50' : 'bg-slate-50') :
           (isPos ? 'bg-emerald-50/70' : isNeg ? 'bg-rose-50/70' : 'bg-slate-50');
 
         let textClass = !isVisible ? 'text-slate-400' :
           isLeader ? 'text-amber-800' :
-          isAccumulate ? (isPos ? 'text-emerald-700' : 'text-slate-500') :
+          isAccumulate ? (isPos ? 'text-indigo-700' : 'text-slate-500') :
           (isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-slate-400');
 
         let leaderCrown = isLeader ? '<span class="text-xs mr-0.5" title="Đang dẫn đầu">👑</span>' : '';
@@ -1066,6 +1191,10 @@
         </th>
       `;
 
+      const nameHoverFocus = isAccumulate
+        ? 'hover:border-indigo-500 focus:border-indigo-500'
+        : 'hover:border-emerald-500 focus:border-emerald-500';
+
       appState.players.forEach((p, idx) => {
         namesRowHtml += `
           <th class="py-1.5 px-1 text-center border-r-0">
@@ -1073,7 +1202,7 @@
               <input type="text" value="${p.name}" 
                 onchange="updatePlayerNameInline('${p.id}', this.value)"
                 title="Bấm vào để đổi tên"
-                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-1 border border-slate-200/80 hover:border-emerald-500 focus:border-emerald-500 transition shadow-2xs">
+                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-1 border border-slate-200/80 ${nameHoverFocus} transition shadow-2xs">
             </div>
           </th>
         `;
@@ -1100,6 +1229,7 @@
 
       const grid = document.getElementById('mobileInputsGrid');
       grid.innerHTML = '';
+      const focusBorderClass = appState.mode === 'accumulate' ? 'focus:border-indigo-500' : 'focus:border-emerald-500';
 
       appState.players.forEach((p, idx) => {
         const val = activeDraftScores[p.id] !== undefined ? activeDraftScores[p.id] : '';
@@ -1115,7 +1245,7 @@
           <input type="number" id="mobileInput_${p.id}" value="${val}" placeholder="0"
             oninput="handleLiveInput('${p.id}', this, true)"
             onkeydown="handleDraftKeydown(event, ${idx})"
-            class="w-20 bg-slate-50 text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:bg-white focus:border-emerald-500 focus:outline-none ${colorClass}">
+            class="w-20 bg-slate-50 text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:bg-white ${focusBorderClass} focus:outline-none ${colorClass}">
         `;
         grid.appendChild(div);
       });
@@ -1143,6 +1273,7 @@
       }
 
       let html = `<div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">`;
+      const draftFocusBorder = appState.mode === 'accumulate' ? 'focus:border-indigo-500' : 'focus:border-emerald-500';
 
       appState.players.forEach((p, idx) => {
         const val = activeDraftScores[p.id] !== undefined ? activeDraftScores[p.id] : '';
@@ -1156,7 +1287,7 @@
             <input type="number" id="inputDraft_${p.id}" value="${val}" placeholder="0"
               oninput="handleLiveInput('${p.id}', this, false)"
               onkeydown="handleDraftKeydown(event, ${idx})"
-              class="w-full max-w-[85px] bg-white text-center font-mono text-sm sm:text-base rounded-lg py-1 px-1 border-2 border-slate-300 focus:border-emerald-500 focus:outline-none shadow-2xs transition-colors ${colorClass}">
+              class="w-full max-w-[85px] bg-white text-center font-mono text-sm sm:text-base rounded-lg py-1 px-1 border-2 border-slate-300 ${draftFocusBorder} focus:outline-none shadow-2xs transition-colors ${colorClass}">
           </div>
         `;
       });
@@ -1264,7 +1395,7 @@
       }
 
       if (appState.mode === 'accumulate') {
-        th.innerHTML = `<span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-amber-700 bg-amber-100/70 border border-amber-200 px-1.5 py-0.5 rounded" title="Chế độ Cộng dồn đua điểm">🏆 ĐUA</span>`;
+        th.innerHTML = '';
         return;
       }
 
@@ -1527,10 +1658,14 @@
         html += `</div></td>`;
 
         // Thao tác: Sửa điểm ván (✏️) và Xóa ván (🗑️)
+        const editHoverClass = isAccumulate
+          ? 'hover:text-indigo-700 hover:bg-indigo-50'
+          : 'hover:text-emerald-700 hover:bg-emerald-50';
+
         html += `
           <td class="py-2.5 px-2 text-center font-sans">
             <div class="flex items-center justify-center gap-1">
-              <button onclick="openEditRoundModal(${round.roundNo})" class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition" title="${t('editRoundTitle')}${round.roundNo}">
+              <button onclick="openEditRoundModal(${round.roundNo})" class="p-1 text-slate-400 ${editHoverClass} rounded transition" title="${t('editRoundTitle')}${round.roundNo}">
                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
               </button>
               <button onclick="deleteHistoricalRound(${round.roundNo})" class="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition" title="${t('deleteRoundTitle')}${round.roundNo}">
@@ -1567,12 +1702,13 @@
       if (!round) return;
 
       currentEditingRoundNo = roundNo;
+      const isAccumulate = appState.mode === 'accumulate';
+      const iconColor = isAccumulate ? 'text-indigo-600' : 'text-emerald-600';
       document.getElementById('editModalTitle').innerHTML = `
-        <i data-lucide="edit-3" class="w-4 h-4 text-emerald-600"></i>
+        <i data-lucide="edit-3" class="w-4 h-4 ${iconColor}"></i>
         <span>${t('modalEditRoundTitle')}${roundNo}</span>
       `;
 
-      const isAccumulate = appState.mode === 'accumulate';
       const descElem = document.getElementById('modalEditRoundDescText');
       if (descElem) {
         descElem.textContent = isAccumulate ? t('modalEditRoundDescAccumulate') : t('modalEditRoundDescZeroSum');
@@ -1585,8 +1721,17 @@
         else autoBalanceWrap.classList.remove('hidden');
       }
 
+      // Đổi màu nút Lưu thay đổi trong modal
+      const btnSaveEdit = document.getElementById('btnSaveEditModal');
+      if (btnSaveEdit) {
+        btnSaveEdit.className = isAccumulate
+          ? 'px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm flex items-center gap-1'
+          : 'px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1';
+      }
+
       const container = document.getElementById('editPlayerInputsContainer');
       container.innerHTML = '';
+      const editFocusBorder = isAccumulate ? 'focus:border-indigo-500' : 'focus:border-emerald-500';
 
       appState.players.forEach(p => {
         const scoreVal = round.scores[p.id] !== undefined ? round.scores[p.id] : 0;
@@ -1601,7 +1746,7 @@
           <span class="text-xs font-bold text-slate-700 truncate max-w-[140px]">${p.name}</span>
           <input type="number" id="editScore_${p.id}" value="${scoreVal}"
             oninput="handleEditModalInput(this)"
-            class="w-24 bg-white text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:border-emerald-500 focus:outline-none shadow-2xs ${colorClass}">
+            class="w-24 bg-white text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 ${editFocusBorder} focus:outline-none shadow-2xs ${colorClass}">
         `;
         container.appendChild(div);
       });
