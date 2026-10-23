@@ -202,50 +202,7 @@
   </section>
 
   <!-- MAIN WRAPPER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 space-y-3">
-
-    <!-- ================= KHU VỰC NHẬP NHANH TRÊN ĐIỆN THOẠI (MOBILE QUICK PAD) ================= -->
-    <!-- Hiển thị trên màn hình nhỏ để bấm phím to rõ, không cần gõ vào bảng hẹp -->
-    <div id="mobileQuickPadBox" class="block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white transition-all">
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-1.5">
-          <span id="mobileRoundBadge" class="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs">
-            Ván #3
-          </span>
-          <span class="text-xs font-bold text-slate-700" id="lblMobileInputTitle">Nhập điểm ván mới:</span>
-        </div>
-        
-        <div class="flex items-center gap-1.5">
-          <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (duy nhất 1 nút đặt cạnh Cân bằng) -->
-          <button type="button" onclick="clearActiveDraft()" class="text-[11px] text-slate-500 hover:text-rose-600 font-semibold flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-rose-50 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
-            <i data-lucide="rotate-ccw" class="w-3 h-3 text-slate-400"></i>
-            <span id="lblResetDraft">Nhập lại</span>
-          </button>
-          
-          <!-- Checksum realtime của mobile -->
-          <div id="mobileChecksumBadge" class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-            0 ✓ Cân bằng
-          </div>
-        </div>
-      </div>
-
-      <!-- Lưới 4 người chơi trên điện thoại (2 cột x 2 hàng, to rõ dễ bấm) -->
-      <div id="mobileInputsGrid" class="grid grid-cols-2 gap-2 mb-2.5">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Nút thao tác trên điện thoại -->
-      <div class="flex items-center gap-2">
-        <button type="button" id="btnAutoBalanceMobile" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
-          <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
-          <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
-        </button>
-        <button type="button" id="btnCommitRoundMobile" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 opacity-60">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
-        </button>
-      </div>
-    </div>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 space-y-3 pb-24 lg:pb-6">
 
     <!-- ================= BẢNG EXCEL ĐẦY ĐỦ (GIAO DIỆN KHÔNG KẺ KHUNG - TỐI GIẢN & HIỆN ĐẠI) ================= -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -256,8 +213,8 @@
       </div>
 
       <div class="overflow-x-auto w-full">
-        <!-- Đặt min-w-560px để các ô không bao giờ bị bẹp thành hình bầu dục trên điện thoại -->
-        <table class="w-full text-left border-collapse text-sm min-w-[560px]">
+        <!-- Đặt min-w-[420px] sm:min-w-[540px] để 4 người chơi hiển thị trọn vẹn trên điện thoại -->
+        <table id="mainScoreTable" class="w-full text-left border-collapse text-sm min-w-[420px] sm:min-w-[540px]">
           
           <!-- ================= HEADER THEO ĐÚNG HÌNH EXCEL CỦA BẠN ================= -->
           <thead>
@@ -361,14 +318,78 @@
             <span id="legendChecksumText">Cột B: Kiểm tra tổng = 0</span>
           </span>
         </div>
-        <div id="legendEnterKey" class="text-slate-400 font-medium">
+        <div id="legendEnterKey" class="text-slate-400 font-medium hidden lg:block">
           Nhấn phím <kbd class="px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]">Enter</kbd> để lưu ván
         </div>
       </div>
 
     </div>
 
+    <!-- NÚT GHI ĐIỂM DẠNG FLOATING ACTION DOCK TRÊN ĐIỆN THOẠI (OPTION 2) -->
+    <div id="mobileBottomDock" class="block lg:hidden fixed bottom-0 inset-x-0 z-30 p-3 bg-gradient-to-t from-slate-100 via-slate-100/90 to-transparent">
+      <button type="button" onclick="openMobileInputSheet()" id="btnOpenMobileSheet" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-2xl shadow-xl shadow-emerald-600/30 border border-emerald-500/40 transition-all flex items-center justify-center gap-2 text-sm sm:text-base">
+        <span class="text-lg leading-none font-bold">＋</span>
+        <span id="lblOpenMobileSheetText">Ghi Điểm Ván Mới (#1)</span>
+      </button>
+    </div>
+
   </main>
+
+  <!-- ================= BACKDROP & KHU VỰC NHẬP NHANH DẠNG SLIDE-UP BOTTOM SHEET TRÊN ĐIỆN THOẠI ================= -->
+  <div id="mobileSheetBackdrop" onclick="closeMobileInputSheet()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden transition-opacity duration-300"></div>
+
+  <div id="mobileQuickPadBox" class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 border-emerald-300 p-4 shadow-2xl space-y-3 transform translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto block lg:hidden">
+    <!-- Thanh kéo Drag Handle -->
+    <div class="flex justify-center -mt-1 mb-1">
+      <div class="w-12 h-1.5 rounded-full bg-slate-300"></div>
+    </div>
+
+    <!-- HÀNG 1: TIÊU ĐỀ VÁN & NÚT ĐÓNG (THOÁNG ĐÃNG, RÕ RÀNG) -->
+    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span id="mobileRoundBadge" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-mono font-bold text-xs shadow-2xs">
+          Ván #1
+        </span>
+        <h3 class="text-sm font-bold text-slate-800" id="lblMobileInputTitle">Nhập điểm ván mới</h3>
+      </div>
+      
+      <!-- Nút Đóng Bottom Sheet (Nút tròn rộng rãi, dễ bấm ngón cái) -->
+      <button type="button" onclick="closeMobileInputSheet()" class="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition" title="Đóng">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- HÀNG 2: THANH TRẠNG THÁI CÂN BẰNG & NÚT NHẬP LẠI (RỘNG RÃI, KHÔNG BỊ CHẬT) -->
+    <div class="flex items-center justify-between gap-2 py-0.5">
+      <!-- Checksum realtime của mobile -->
+      <div id="mobileChecksumBadge" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+        0 ✓ Cân bằng
+      </div>
+
+      <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (luôn nằm gọn gàng bên phải) -->
+      <button type="button" onclick="clearActiveDraft()" class="ml-auto text-xs text-slate-600 hover:text-rose-600 active:text-rose-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 active:bg-rose-100 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span id="lblResetDraft">Nhập lại</span>
+      </button>
+    </div>
+
+    <!-- Lưới 4 người chơi trên điện thoại (2 cột x 2 hàng, to rõ dễ bấm) -->
+    <div id="mobileInputsGrid" class="grid grid-cols-2 gap-2 mb-2.5">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Nút thao tác trên điện thoại -->
+    <div class="flex items-center gap-2">
+      <button type="button" id="btnAutoBalanceMobile" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+        <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
+        <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
+      </button>
+      <button type="button" id="btnCommitRoundMobile" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 opacity-60">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
+      </button>
+    </div>
+  </div>
 
   <!-- MODAL: CÀI ĐẶT NGƯỜI CHƠI -->
   <div id="playerModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
@@ -482,7 +503,10 @@
         playerListTitle: "Danh sách người chơi",
         resetGameTitle: "Đặt lại bàn chơi",
         mobileRoundPrefix: "Ván #",
-        mobileInputTitle: "Nhập điểm ván mới:",
+        mobileInputTitle: "Nhập điểm ván mới",
+        openMobileSheetBtn: "Ghi Điểm Ván Mới (#{round})",
+        closeSheetBtn: "Đóng",
+        tapToEditRound: "Chạm vào dòng để sửa điểm ván #{round}",
         resetDraft: "Nhập lại",
         resetDraftTitle: "Xóa các ô điểm đang gõ dở để nhập lại",
         balancedCheck: "0 ✓ Cân bằng",
@@ -555,7 +579,10 @@
         playerListTitle: "Player list",
         resetGameTitle: "Reset game table",
         mobileRoundPrefix: "Round #",
-        mobileInputTitle: "Enter new round score:",
+        mobileInputTitle: "Enter round score",
+        openMobileSheetBtn: "Enter Round #{round} Score",
+        closeSheetBtn: "Close",
+        tapToEditRound: "Tap row to edit round #{round} score",
         resetDraft: "Reset draft",
         resetDraftTitle: "Clear current unsaved inputs",
         balancedCheck: "0 ✓ Balanced",
@@ -952,20 +979,21 @@
           : 'flex items-center gap-1 text-[11px] sm:text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-bold px-2.5 py-1 rounded-lg transition';
       }
 
-      // 5. Khung nhập nhanh trên Điện thoại (Mobile Quick Pad)
+      // 5. Khung nhập nhanh trên Điện thoại (Mobile Quick Pad dạng Bottom Sheet)
       const quickPadBox = document.getElementById('mobileQuickPadBox');
       const mobileRoundBadge = document.getElementById('mobileRoundBadge');
       const btnCommitMobile = document.getElementById('btnCommitRoundMobile');
 
       if (quickPadBox) {
-        quickPadBox.className = isZeroSum
-          ? 'block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white transition-all'
-          : 'block lg:hidden bg-white border border-indigo-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-indigo-50/50 to-white transition-all';
+        const isOpen = !quickPadBox.classList.contains('translate-y-full');
+        const translateClass = isOpen ? '' : 'translate-y-full';
+        const borderClass = isZeroSum ? 'border-emerald-300' : 'border-indigo-300';
+        quickPadBox.className = `fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 ${borderClass} p-4 shadow-2xl space-y-3 transform ${translateClass} transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto block lg:hidden`;
       }
       if (mobileRoundBadge) {
         mobileRoundBadge.className = isZeroSum
-          ? 'px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs'
-          : 'px-2 py-0.5 rounded-md bg-indigo-600 text-white font-mono font-bold text-xs';
+          ? 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-mono font-bold text-xs shadow-2xs'
+          : 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-mono font-bold text-xs shadow-2xs';
       }
       if (btnCommitMobile) {
         const isDimmed = btnCommitMobile.classList.contains('opacity-60');
@@ -974,6 +1002,9 @@
           ? `flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5${dimClass}`
           : `flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5${dimClass}`;
       }
+
+      // Cập nhật Nút ghi điểm ván mới ở Dock dưới cùng trên điện thoại
+      updateMobileBottomDock();
 
       // 6. Hàng nhập ván mới trên Bảng (Active Row)
       const activeRow = document.getElementById('activeInputRow');
@@ -1093,7 +1124,57 @@
       renderActiveDraftRow();
       renderHistoricalRounds();
       updateTableChecksum();
+      updateMobileBottomDock();
+
+      // Chỉ hiển thị hướng dẫn vuốt ngang khi có nhiều hơn 4 người chơi
+      const swipeGuide = document.getElementById('lblSwipeGuide');
+      if (swipeGuide) {
+        swipeGuide.style.display = appState.players.length > 4 ? 'block' : 'none';
+      }
+
       lucide.createIcons();
+    }
+
+    // --- ĐIỀU KHIỂN BOTTOM SHEET NHẬP ĐIỂM TRÊN ĐIỆN THOẠI (OPTION 2) ---
+    function openMobileInputSheet() {
+      const backdrop = document.getElementById('mobileSheetBackdrop');
+      const padBox = document.getElementById('mobileQuickPadBox');
+      if (backdrop) backdrop.classList.remove('hidden');
+      if (padBox) {
+        padBox.classList.remove('translate-y-full');
+        lucide.createIcons();
+        setTimeout(() => {
+          const firstInput = padBox.querySelector('input');
+          if (firstInput) firstInput.focus();
+        }, 250);
+      }
+    }
+
+    function closeMobileInputSheet() {
+      const backdrop = document.getElementById('mobileSheetBackdrop');
+      const padBox = document.getElementById('mobileQuickPadBox');
+      if (backdrop) backdrop.classList.add('hidden');
+      if (padBox) padBox.classList.add('translate-y-full');
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+    }
+
+    function updateMobileBottomDock() {
+      const btnText = document.getElementById('lblOpenMobileSheetText');
+      const btnDock = document.getElementById('btnOpenMobileSheet');
+      const maxNo = appState.rounds.length > 0 ? Math.max(...appState.rounds.map(r => r.roundNo)) : 0;
+      const nextRoundNo = maxNo + 1;
+
+      if (btnText) {
+        btnText.textContent = t('openMobileSheetBtn').replace('{round}', nextRoundNo);
+      }
+      if (btnDock) {
+        const isAcc = appState.mode === 'accumulate';
+        btnDock.className = isAcc
+          ? 'w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold rounded-2xl shadow-xl shadow-indigo-600/30 border border-indigo-500/40 transition-all flex items-center justify-center gap-2 text-sm sm:text-base'
+          : 'w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-2xl shadow-xl shadow-emerald-600/30 border border-emerald-500/40 transition-all flex items-center justify-center gap-2 text-sm sm:text-base';
+      }
     }
 
     // Render Hàng 2 (Tổng điểm) & Hàng 3 (Tên người chơi)
@@ -1374,10 +1455,10 @@
           badgeMobile.className = 'hidden';
         } else {
           if (sum === 0) {
-            badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+            badgeMobile.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs';
             badgeMobile.textContent = t('balancedCheck');
           } else {
-            badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse';
+            badgeMobile.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse shadow-2xs';
             badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum} ${t('pointsUnit')}!`;
           }
         }
@@ -1496,10 +1577,8 @@
       });
       const nextRoundNo = maxNo + 1;
 
-      // 3. Thu bàn phím ảo trên điện thoại nếu đang mở
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
-        document.activeElement.blur();
-      }
+      // 3. Đóng Bottom Sheet và thu bàn phím ảo trên điện thoại nếu đang mở
+      closeMobileInputSheet();
 
       appState.rounds.push({ roundNo: nextRoundNo, scores });
       if (appState.roundsByMode) {
@@ -1536,7 +1615,16 @@
       // NẾU CHƯA CÓ VÁN NÀO ĐƯỢC LƯU (BÀN CHƠI MỚI TINH):
       if (sortedRounds.length === 0) {
         const tr = document.createElement('tr');
-        tr.className = 'history-round-row hover:bg-slate-50 transition border-b border-slate-100/90';
+        tr.className = 'history-round-row hover:bg-slate-100/70 active:bg-slate-200/50 cursor-pointer transition border-b border-slate-100/90 select-none';
+        tr.onclick = () => {
+          if (window.innerWidth < 1024) {
+            openMobileInputSheet();
+          } else {
+            const firstInp = document.getElementById(`inputDraft_${appState.players[0].id}`);
+            if (firstInp) firstInp.focus();
+          }
+        };
+        tr.title = t('openMobileSheetBtn').replace('{round}', 1);
 
         let draftSum = 0;
         let hasAnyInput = false;
@@ -1617,7 +1705,9 @@
       sortedRounds.forEach((round) => {
         const tr = document.createElement('tr');
         tr.id = `historyRow_${round.roundNo}`;
-        tr.className = 'history-round-row hover:bg-slate-50 transition-colors duration-500 group border-b border-slate-100/90';
+        tr.className = 'history-round-row hover:bg-slate-100/70 active:bg-slate-200/50 cursor-pointer transition-colors duration-200 group border-b border-slate-100/90 select-none';
+        tr.title = t('tapToEditRound').replace('{round}', round.roundNo);
+        tr.onclick = () => openEditRoundModal(round.roundNo);
 
         let roundSum = 0;
         appState.players.forEach(p => {
@@ -1672,18 +1762,11 @@
 
         html += `</div></td>`;
 
-        // Thao tác: Sửa điểm ván (✏️) và Xóa ván (🗑️)
-        const editHoverClass = isAccumulate
-          ? 'hover:text-indigo-700 hover:bg-indigo-50'
-          : 'hover:text-emerald-700 hover:bg-emerald-50';
-
+        // Thao tác: Chỉ hiện nút Xóa (🗑️), bấm vào dòng để Sửa điểm ván
         html += `
-          <td class="py-2.5 px-2 text-center font-sans">
-            <div class="flex items-center justify-center gap-1">
-              <button onclick="openEditRoundModal(${round.roundNo})" class="p-1 text-slate-400 ${editHoverClass} rounded transition" title="${t('editRoundTitle')}${round.roundNo}">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-              </button>
-              <button onclick="deleteHistoricalRound(${round.roundNo})" class="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition" title="${t('deleteRoundTitle')}${round.roundNo}">
+          <td class="py-2.5 px-1.5 text-center font-sans">
+            <div class="flex items-center justify-center">
+              <button type="button" onclick="event.stopPropagation(); deleteHistoricalRound(${round.roundNo})" class="p-1.5 text-slate-400 hover:text-rose-600 active:text-rose-700 rounded-lg hover:bg-rose-50 active:bg-rose-100 transition" title="${t('deleteRoundTitle')}${round.roundNo}">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
