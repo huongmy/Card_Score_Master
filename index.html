@@ -233,7 +233,7 @@
           <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
           <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
         </button>
-        <button type="button" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5">
+        <button type="button" id="btnCommitRoundMobile" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 opacity-60">
           <i data-lucide="check" class="w-4 h-4"></i>
           <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
         </button>
@@ -323,7 +323,7 @@
                   <button type="button" onclick="autoBalanceActiveRow()" class="px-1.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded text-xs border border-amber-300 transition" title="Tự cân người cuối">
                     <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
                   </button>
-                  <button type="button" onclick="commitActiveRound()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5" title="Lưu ván này (Enter)">
+                  <button type="button" id="btnCommitRoundTable" onclick="commitActiveRound()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5 opacity-60" title="Lưu ván này (Enter)">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                     <span id="btnSaveDraftTableText">Lưu</span>
                   </button>
@@ -516,7 +516,8 @@
         summaryTransferItem: "👉 {from} chuyển cho {to}: {amount}",
         defaultPlayerPrefix: "Bạn ",
         statusDrafting: "Đang nhập",
-        statusRound1: "Ván 1"
+        statusRound1: "Ván 1",
+        alertAllZero: "Chưa nhập điểm cho ván này! Điểm của tất cả người chơi không thể đồng thời bằng 0."
       },
       en: {
         appTitle: "Card Score Master",
@@ -581,7 +582,8 @@
         summaryTransferItem: "👉 {from} transfers to {to}: {amount}",
         defaultPlayerPrefix: "Player ",
         statusDrafting: "Draft",
-        statusRound1: "Round 1"
+        statusRound1: "Round 1",
+        alertAllZero: "No scores entered! All player scores cannot be 0."
       }
     };
 
@@ -616,13 +618,13 @@
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed.rounds && Array.isArray(parsed.rounds)) {
+            // Lọc bỏ các ván mock cũ hoặc các ván toàn 0 do bấm nhầm
+            parsed.rounds = parsed.rounds.filter(r => {
+              const vals = Object.values(r.scores || {});
+              return vals.length > 0 && vals.some(sc => Number(sc) !== 0);
+            });
             parsed.rounds.sort((a, b) => a.roundNo - b.roundNo);
-            // Nếu phát hiện dữ liệu mock mẫu cũ (+10, -5), reset về rỗng
-            if (parsed.rounds.length === 2 && 
-                parsed.rounds[0].scores?.p1 === 10 && 
-                parsed.rounds[1].scores?.p1 === -5) {
-              parsed.rounds = [];
-            }
+            parsed.rounds.forEach((r, idx) => r.roundNo = idx + 1);
           } else {
             parsed.rounds = [];
           }
@@ -1066,9 +1068,24 @@
 
     function updateActiveRowSum() {
       let sum = 0;
+      let hasAnyNonZero = false;
       appState.players.forEach(p => {
-        sum += Number(activeDraftScores[p.id]) || 0;
+        const val = Number(activeDraftScores[p.id]) || 0;
+        sum += val;
+        if (val !== 0) hasAnyNonZero = true;
       });
+
+      // Làm mờ hoặc làm sáng nút Lưu tùy theo đã nhập điểm hay chưa
+      const btnMobile = document.getElementById('btnCommitRoundMobile');
+      const btnTable = document.getElementById('btnCommitRoundTable');
+      if (btnMobile) {
+        if (!hasAnyNonZero) btnMobile.classList.add('opacity-60');
+        else btnMobile.classList.remove('opacity-60');
+      }
+      if (btnTable) {
+        if (!hasAnyNonZero) btnTable.classList.add('opacity-60');
+        else btnTable.classList.remove('opacity-60');
+      }
 
       // Badge trên bảng
       const badgeTable = document.getElementById('activeRowSumBadge');
@@ -1165,12 +1182,8 @@
 
     // --- LƯU VÁN MỚI (SẮP XẾP CHUẨN XÁC KHÔNG BỊ ĐẢO SỐ THỨ TỰ) ---
     function commitActiveRound() {
-      let maxNo = 0;
-      appState.rounds.forEach(r => {
-        if (r.roundNo > maxNo) maxNo = r.roundNo;
-      });
-      const nextRoundNo = maxNo + 1;
-
+      // 1. Kiểm tra chặn lưu nếu tất cả người chơi đều là 0 (chưa nhập điểm)
+      let hasAnyNonZero = false;
       const scores = {};
       let sum = 0;
 
@@ -1178,14 +1191,29 @@
         const val = Number(activeDraftScores[p.id]) || 0;
         scores[p.id] = val;
         sum += val;
+        if (val !== 0) hasAnyNonZero = true;
       });
 
+      if (!hasAnyNonZero) {
+        alert(t('alertAllZero'));
+        document.getElementById(`inputDraft_${appState.players[0].id}`)?.focus();
+        document.getElementById(`mobileInput_${appState.players[0].id}`)?.focus();
+        return;
+      }
+
+      // 2. Kiểm tra tổng ván phải cân bằng = 0
       if (sum !== 0) {
         const confirmMsg = t('confirmUnbalancedSave').replace('{sum}', (sum > 0 ? '+' : '') + sum);
         if (!confirm(confirmMsg)) {
           return;
         }
       }
+
+      let maxNo = 0;
+      appState.rounds.forEach(r => {
+        if (r.roundNo > maxNo) maxNo = r.roundNo;
+      });
+      const nextRoundNo = maxNo + 1;
 
       appState.rounds.push({ roundNo: nextRoundNo, scores });
       activeDraftScores = {};
@@ -1466,12 +1494,19 @@
       if (!round) return;
 
       let sum = 0;
+      let hasAnyNonZero = false;
       const newScores = {};
       appState.players.forEach(p => {
         const val = Number(document.getElementById(`editScore_${p.id}`)?.value) || 0;
         newScores[p.id] = val;
         sum += val;
+        if (val !== 0) hasAnyNonZero = true;
       });
+
+      if (!hasAnyNonZero) {
+        alert(t('alertAllZero'));
+        return;
+      }
 
       if (sum !== 0) {
         const confirmMsg = t('confirmEditUnbalancedSave')
