@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sổ Tính Điểm Đánh Bài - Card Score Master</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F8FAFC; /* slate-50 */
+      color: #0F172A; /* slate-900 */
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+    /* Dynamic color classes for input */
+    .color-positive {
+      color: #16a34a !important; /* green-600 */
+      font-weight: 800 !important;
+    }
+    .color-negative {
+      color: #dc2626 !important; /* red-600 */
+      font-weight: 800 !important;
+    }
+    .color-neutral {
+      color: #475569 !important; /* slate-600 */
+      font-weight: 600 !important;
+    }
+    .editable-name:focus {
+      background-color: #ffffff;
+      outline: none;
+      box-shadow: 0 0 0 2px #10b981;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- ================= TOP APP BAR (BỐ CỤC CHUẨN QC: CĂN GIỮA ĐỒNG BỘ VỚI BẢNG, HỖ TRỢ VI/EN) ================= -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6">
+      
+      <!-- HÀNG CHÍNH (Trên Desktop: Gom toàn bộ vào 1 hàng duy nhất, căn chuẩn theo bảng, không bay ra 2 bên mép) -->
+      <div class="h-14 flex items-center justify-between gap-3">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs">
+            ♠
+          </div>
+          <div>
+            <h1 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight leading-none" id="lblAppTitle">Sổ Tính Điểm Bài</h1>
+            <span class="text-[10px] text-slate-400 font-medium hidden sm:inline" id="lblAppSubtitle">Chuẩn định dạng Excel • Tự động tính real-time</span>
+          </div>
+        </div>
+
+        <!-- CỤM CÔNG CỤ TRUNG TÂM TRÊN WEB (Gom gọn gàng ngay cạnh bảng, chuẩn công thái học) -->
+        <div class="hidden md:flex items-center gap-2.5">
+          <!-- Chế độ tính -->
+          <div class="inline-flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+            <button id="modeBtnDirect" onclick="setCalculationMode('direct')" class="px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition">
+              Có nhiêu tính nhiêu
+            </button>
+            <button id="modeBtnRate" onclick="setCalculationMode('rate')" class="px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition">
+              Quy đổi 1đ = X tiền
+            </button>
+          </div>
+
+          <!-- Đơn giá khi chọn mode Quy đổi -->
+          <div id="rateSettingBox" class="hidden items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 text-xs text-amber-900">
+            <span class="text-amber-700 font-medium text-[11px]" id="lblRatePrefix">1đ =</span>
+            <input type="number" id="pointRateInput" value="5000" step="1000" onchange="syncRate(this.value)" class="w-16 bg-white text-amber-800 font-bold font-mono text-right rounded px-1.5 py-0.5 border border-amber-300 text-xs focus:outline-none">
+            <span class="text-amber-700 font-medium text-[11px]" id="lblRateUnit">đ</span>
+          </div>
+
+          <!-- Nút chia tiền -->
+          <button onclick="toggleSummaryPanel()" id="btnToggleSummary" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs">
+            <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span id="lblSettlementBtn">Chia tiền</span>
+            <i id="summaryChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+          </button>
+        </div>
+
+        <!-- NHÓM NÚT BÊN PHẢI (VI/EN + Con mắt + Quản lý + Reset) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          
+          <!-- NÚT CHUYỂN NGÔN NGỮ TIẾNG ANH / TIẾNG VIỆT (Yêu cầu 1) -->
+          <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-bold font-mono">
+            <button type="button" onclick="setLanguage('vi')" id="btnLangVi" class="px-2 py-0.5 rounded text-[11px] bg-white text-emerald-700 shadow-2xs transition">VI</button>
+            <button type="button" onclick="setLanguage('en')" id="btnLangEn" class="px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition">EN</button>
+          </div>
+
+          <!-- Nút con mắt ẩn/hiện Tổng điểm -->
+          <button type="button" onclick="toggleTotalVisibility()" id="btnEyeToggleHeader" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition" title="Ẩn/Hiện hàng tổng điểm">
+            <i id="eyeIconHeader" data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span class="text-[11px] hidden xs:inline" id="eyeToggleText">Hiện điểm</span>
+          </button>
+
+          <!-- Quản lý người chơi -->
+          <button onclick="openPlayerModal()" class="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition border border-slate-200" title="Danh sách người chơi">
+            <i data-lucide="users" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Reset -->
+          <button onclick="resetDataPrompt()" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition border border-slate-200" title="Đặt lại bàn chơi">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- DÒNG PHỤ TRÊN ĐIỆN THOẠI (md:hidden - chỉ hiện khi màn hình nhỏ, và có max-w-7xl căn đều 2 bên) -->
+      <div class="md:hidden border-t border-slate-100 py-1.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <div class="inline-flex bg-slate-100 p-0.5 rounded-lg text-xs">
+            <button id="modeBtnDirectMobile" onclick="setCalculationMode('direct')" class="px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition">
+              Có nhiêu tính nhiêu
+            </button>
+            <button id="modeBtnRateMobile" onclick="setCalculationMode('rate')" class="px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition">
+              Quy đổi điểm
+            </button>
+          </div>
+
+          <div id="rateSettingBoxMobile" class="hidden items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-1.5 py-0.5 text-xs text-amber-900">
+            <input type="number" id="pointRateInputMobile" value="5000" step="1000" onchange="syncRate(this.value)" class="w-12 bg-white text-amber-800 font-bold font-mono text-right rounded px-1 py-0.5 border border-amber-300 text-xs focus:outline-none">
+            <span class="text-amber-700 font-medium text-[10px]" id="lblRateUnitMobile">đ</span>
+          </div>
+        </div>
+
+        <button onclick="toggleSummaryPanel()" id="btnToggleSummaryMobile" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shrink-0">
+          <i data-lucide="receipt" class="w-3 h-3 text-emerald-400"></i>
+          <span id="lblSettlementBtnMobile">Chia tiền</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ACCORDION / DRAWER: BẢNG TỔNG KẾT & CHIA TIỀN -->
+  <section id="summaryAccordion" class="hidden border-b border-slate-200 bg-white shadow-md animate-in slide-in-from-top-2 duration-150">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1 rounded-md bg-emerald-100 text-emerald-800">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+          </div>
+          <h2 class="text-xs sm:text-sm font-bold text-slate-900" id="lblScheduleTitle">Lịch Trình Chuyển Tiền (Ai trả ai)</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="copySettlementMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span id="lblCopyZaloBtn">Sao chép gửi Zalo</span>
+          </button>
+          <button onclick="toggleSummaryPanel()" class="text-slate-400 hover:text-slate-600 p-1">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="summarySettlementGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN WRAPPER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 space-y-3">
+
+    <!-- ================= KHU VỰC NHẬP NHANH TRÊN ĐIỆN THOẠI (MOBILE QUICK PAD) ================= -->
+    <!-- Hiển thị trên màn hình nhỏ để bấm phím to rõ, không cần gõ vào bảng hẹp -->
+    <div class="block lg:hidden bg-white border border-emerald-300 rounded-2xl p-3 shadow-sm bg-gradient-to-b from-emerald-50/50 to-white">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-1.5">
+          <span id="mobileRoundBadge" class="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs">
+            Ván #3
+          </span>
+          <span class="text-xs font-bold text-slate-700" id="lblMobileInputTitle">Nhập điểm ván mới:</span>
+        </div>
+        
+        <div class="flex items-center gap-1.5">
+          <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (duy nhất 1 nút đặt cạnh Cân bằng) -->
+          <button type="button" onclick="clearActiveDraft()" class="text-[11px] text-slate-500 hover:text-rose-600 font-semibold flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-rose-50 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
+            <i data-lucide="rotate-ccw" class="w-3 h-3 text-slate-400"></i>
+            <span id="lblResetDraft">Nhập lại</span>
+          </button>
+          
+          <!-- Checksum realtime của mobile -->
+          <div id="mobileChecksumBadge" class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            0 ✓ Cân bằng
+          </div>
+        </div>
+      </div>
+
+      <!-- Lưới 4 người chơi trên điện thoại (2 cột x 2 hàng, to rõ dễ bấm) -->
+      <div id="mobileInputsGrid" class="grid grid-cols-2 gap-2 mb-2.5">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Nút thao tác trên điện thoại: Chỉ 2 nút lớn cân đối 50/50 -->
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
+          <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
+        </button>
+        <button type="button" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= BẢNG EXCEL ĐẦY ĐỦ (GIAO DIỆN KHÔNG KẺ KHUNG - TỐI GIẢN & HIỆN ĐẠI) ================= -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      
+      <!-- Hướng dẫn vuốt trên điện thoại -->
+      <div id="lblSwipeGuide" class="block lg:hidden px-3 py-1 bg-slate-50 border-b border-slate-100 text-[11px] text-slate-400 text-center font-medium">
+        👉 Vuốt ngang bảng bên dưới để xem đầy đủ các cột
+      </div>
+
+      <div class="overflow-x-auto w-full">
+        <!-- Đặt min-w-560px để các ô không bao giờ bị bẹp thành hình bầu dục trên điện thoại -->
+        <table class="w-full text-left border-collapse text-sm min-w-[560px]">
+          
+          <!-- ================= HEADER THEO ĐÚNG HÌNH EXCEL CỦA BẠN ================= -->
+          <thead>
+            
+            <!-- HÀNG 2 CỦA EXCEL: TỔNG ĐIỂM CỦA TỪNG NGƯỜI CHƠI (TỰ ĐỘNG TÍNH REALTIME) -->
+            <tr id="playerTotalsHeaderRow" class="bg-slate-100/60 border-b border-slate-200/60">
+              <th class="py-2.5 px-2 w-16 text-center text-slate-600 font-bold text-xs shrink-0">
+                <div class="flex items-center justify-center gap-1">
+                  <span id="lblTotalRowHeader">Tổng</span>
+                  <button type="button" onclick="toggleTotalVisibility()" class="p-0.5 hover:bg-slate-200 rounded text-slate-500" title="Ẩn/Hiện tổng điểm">
+                    <i id="eyeIconTable" data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  </button>
+                </div>
+              </th>
+              
+              <!-- Checksum cả bàn: Luôn phải = 0 -->
+              <th id="thTableChecksum" class="py-2.5 px-2 w-20 text-center">
+                <span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-1.5 py-0.5 rounded">
+                  0 ✓
+                </span>
+              </th>
+
+              <!-- Điểm tổng từng người chơi (ĐÃ BỎ HOÀN TOÀN GẠCH DỌC DƯ THỪA) -->
+              <th id="thPlayerTotalsRow" colspan="4" class="p-0">
+                <!-- Sẽ inject cột tổng điểm từng người chơi ở đây -->
+              </th>
+
+              <th class="py-2.5 px-2 w-16 text-center">
+              </th>
+            </tr>
+
+            <!-- HÀNG 3 CỦA EXCEL: TÊN NGƯỜI CHƠI (BẤM VÀO SỬA TÊN TRỰC TIẾP) -->
+            <tr id="playerNamesHeaderRow" class="bg-slate-50/70 border-b border-slate-200 text-xs font-bold text-slate-700">
+              <!-- Rendered by JS -->
+            </tr>
+
+          </thead>
+
+          <!-- ================= THÂN BẢNG: ĐƯA DÒNG NHẬP VÁN MỚI LÊN ĐẦU ================= -->
+          <tbody class="divide-y divide-slate-100 font-mono">
+            
+            <!-- DÒNG NHẬP VÁN MỚI TRÊN BẢNG (CHỈ HIỂN THỊ TRÊN MÀN HÌNH RỘNG / WEB) -->
+            <tr id="activeInputRow" class="hidden lg:table-row bg-emerald-50/40 border-b-2 border-emerald-500/80 transition-colors">
+              
+              <!-- Cột A: Số ván -->
+              <td class="py-2 px-2 text-center">
+                <span id="activeRoundNoBadge" class="inline-block px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold text-xs shadow-2xs font-mono">
+                  #3
+                </span>
+              </td>
+
+              <!-- Cột B: Checksum ván đang nhập -->
+              <td class="py-2 px-2 text-center">
+                <div id="activeRowSumBadge" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs">
+                  0 ✓
+                </div>
+              </td>
+
+              <!-- Các ô nhập điểm từng người -->
+              <td id="tdActiveInputsContainer" colspan="4" class="p-0">
+                <!-- Rendered by JS -->
+              </td>
+
+              <!-- Cột Thao tác: Nút Xóa dở, Nút Tự Cân & Nút Lưu ván -->
+              <td class="py-2 px-2 text-center font-sans">
+                <div class="flex items-center justify-center gap-1">
+                  <button type="button" onclick="clearActiveDraft()" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title="Xóa trắng các ô đang nhập">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-500"></i>
+                  </button>
+                  <button type="button" onclick="autoBalanceActiveRow()" class="px-1.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded text-xs border border-amber-300 transition" title="Tự cân người cuối">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
+                  </button>
+                  <button type="button" onclick="commitActiveRound()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5" title="Lưu ván này (Enter)">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span id="btnSaveDraftTableText">Lưu</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- LỊCH SỬ CÁC VÁN ĐÃ ĐÁNH -->
+            <!-- Rendered by JS -->
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Chú thích chân bảng -->
+      <div class="px-3 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] sm:text-xs text-slate-500 gap-2">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1 font-medium">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+            <span id="legendPositiveText">Dương: Thắng (Xanh)</span>
+          </span>
+          <span class="flex items-center gap-1 font-medium">
+            <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+            <span id="legendNegativeText">Âm: Thua (Đỏ)</span>
+          </span>
+          <span class="flex items-center gap-1 font-medium">
+            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+            <span id="legendChecksumText">Cột B: Kiểm tra tổng = 0</span>
+          </span>
+        </div>
+        <div id="legendEnterKey" class="text-slate-400 font-medium">
+          Nhấn phím <kbd class="px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]">Enter</kbd> để lưu ván
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: CÀI ĐẶT NGƯỜI CHƠI -->
+  <div id="playerModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+          <span id="modalPlayerHeaderTitle">Danh Sách Người Chơi</span>
+        </h3>
+        <button onclick="closePlayerModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <p id="modalPlayerDescText" class="text-xs text-slate-500">Đổi tên người chơi hoặc thêm/bớt số người tham gia ván bài:</p>
+        
+        <div id="playerEditList" class="space-y-2">
+          <!-- Rendered by JS -->
+        </div>
+
+        <button onclick="addNewPlayerInput()" class="w-full py-2 border-2 border-dashed border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span id="btnAddPlayerText">Thêm người chơi</span>
+        </button>
+      </div>
+
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+        <button onclick="closePlayerModal()" id="btnCancelPlayerText" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
+          Hủy
+        </button>
+        <button onclick="savePlayersFromModal()" id="btnSavePlayerText" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm">
+          Lưu thay đổi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SỬA ĐIỂM VÁN (CHỈNH SỬA KHI NHẬP NHẦM) -->
+  <div id="editRoundModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 id="editModalTitle" class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-4 h-4 text-emerald-600"></i>
+          <span>Sửa Điểm Ván</span>
+        </h3>
+        <button onclick="closeEditRoundModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <p id="modalEditRoundDescText" class="text-xs text-slate-500">Chỉnh sửa lại số điểm bị ghi nhầm (Tổng điểm 4 người phải = 0):</p>
+        
+        <div id="editPlayerInputsContainer" class="space-y-2">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Trạng thái Cân Bằng realtime khi sửa -->
+        <div id="editModalChecksumBox" class="p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-emerald-50 border-emerald-300 text-emerald-800">
+          <span id="editModalChecksumMsg">Tổng điểm: 0 (Đã cân bằng ✓)</span>
+          <span id="editModalChecksumVal" class="font-mono text-sm">0</span>
+        </div>
+
+        <!-- Nút Tự Cân Người Cuối Cùng -->
+        <div class="flex justify-end pt-1">
+          <button type="button" onclick="autoBalanceEditModal()" class="text-xs text-amber-800 hover:text-amber-900 font-bold bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
+            <span id="btnAutoBalanceEditText">Tự cân người còn lại</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+        <button onclick="closeEditRoundModal()" id="btnCancelEditText" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
+          Hủy bỏ
+        </button>
+        <button onclick="saveEditRoundFromModal()" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span id="btnSaveEditText">Lưu thay đổi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const STORAGE_KEY = 'CARD_SCORE_APP_DATA_V5';
+
+    // BỘ TỪ ĐIỂN SONG NGỮ (VI / EN)
+    const i18n = {
+      vi: {
+        appTitle: "Sổ Tính Điểm Bài",
+        appSubtitle: "Chuẩn định dạng Excel • Tự động tính real-time",
+        modeDirect: "Có nhiêu tính nhiêu",
+        modeRate: "Quy đổi 1đ = X tiền",
+        modeRateMobile: "Quy đổi điểm",
+        ratePrefix: "1đ =",
+        rateUnit: "đ",
+        settlementBtn: "Chia tiền",
+        scheduleTitle: "Lịch Trình Chuyển Tiền (Ai trả ai)",
+        copyZaloBtn: "Sao chép gửi Zalo",
+        copiedMsg: "Đã sao chép nội dung chia tiền! Bạn có thể dán vào nhóm Zalo.",
+        noTransactions: "Bàn cờ đang hòa hoặc chưa có điểm phát sinh.",
+        showPoints: "Hiện điểm",
+        hidePoints: "Ẩn điểm",
+        eyeTitle: "Ẩn/Hiện hàng tổng điểm",
+        playerListTitle: "Danh sách người chơi",
+        resetGameTitle: "Đặt lại bàn chơi",
+        mobileRoundPrefix: "Ván #",
+        mobileInputTitle: "Nhập điểm ván mới:",
+        resetDraft: "Nhập lại",
+        resetDraftTitle: "Xóa các ô điểm đang gõ dở để nhập lại",
+        balancedCheck: "0 ✓ Cân bằng",
+        unbalancedAlert: "Lệch:",
+        autoBalanceBtn: "Tự cân người còn lại",
+        saveRoundBtn: "Lưu ván này (Enter)",
+        swipeGuide: "👉 Vuốt ngang bảng bên dưới để xem đầy đủ các cột",
+        colRound: "Ván",
+        colTotal: "Tổng",
+        colActions: "Thao tác",
+        legendPositive: "Dương: Thắng (Xanh)",
+        legendNegative: "Âm: Thua (Đỏ)",
+        legendChecksum: "Cột B: Kiểm tra tổng = 0",
+        legendEnter: "Nhấn phím <kbd class=\"px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]\">Enter</kbd> để lưu ván",
+        modalPlayerTitle: "Danh Sách Người Chơi",
+        modalPlayerDesc: "Đổi tên người chơi hoặc thêm/bớt số người tham gia ván bài:",
+        addPlayerBtn: "Thêm người chơi",
+        cancelBtn: "Hủy",
+        saveChangesBtn: "Lưu thay đổi",
+        modalEditRoundTitle: "Sửa Điểm Ván #",
+        modalEditRoundDesc: "Chỉnh sửa lại số điểm bị ghi nhầm (Tổng điểm các người chơi phải = 0):",
+        balancedSumMsg: "Tổng điểm: 0 (Đã cân bằng ✓)",
+        unbalancedSumMsg: "Tổng điểm bị lệch:",
+        autoBalanceModalBtn: "Tự cân người còn lại",
+        saveRoundAction: "Lưu",
+        saveRoundActionTitle: "Lưu ván này (Enter)",
+        clearDraftTitle: "Xóa trắng các ô đang nhập",
+        autoBalanceTitle: "Tự cân người cuối",
+        editRoundTitle: "Sửa điểm ván #",
+        deleteRoundTitle: "Xóa ván #",
+        confirmDeleteRound: "Bạn có chắc muốn xóa ván số {round}?",
+        confirmReset: "Bạn có chắc muốn đặt lại toàn bộ bàn chơi về mặc định ban đầu không?",
+        confirmUnbalancedSave: "Cảnh báo: Tổng điểm của ván này đang là {sum} (không bằng 0).\nBạn có muốn lưu không?",
+        confirmEditUnbalancedSave: "Cảnh báo: Tổng điểm ván #{round} đang là {sum} (chưa bằng 0).\nBạn có chắc muốn lưu không?",
+        deletePlayerConfirm: "Xóa người chơi này?",
+        summaryHeader: "🎰 TỔNG KẾT BÀN CHƠI ({rounds} ván)",
+        summaryRateLabel: " (Tỷ lệ: 1đ = {rate}đ)",
+        summaryScores: "📊 ĐIỂM SỐ:",
+        summaryTransfers: "💸 CHUYỂN KHOẢN (AI TRẢ AI):",
+        summaryDraw: "Hòa nhau!",
+        summaryTransferItem: "👉 {from} chuyển cho {to}: {amount}",
+        defaultPlayerPrefix: "Bạn "
+      },
+      en: {
+        appTitle: "Card Score Master",
+        appSubtitle: "Excel layout • Real-time auto calculation",
+        modeDirect: "Direct Score",
+        modeRate: "Rate 1 pt = $X",
+        modeRateMobile: "Rate Mode",
+        ratePrefix: "1 pt =",
+        rateUnit: "pts",
+        settlementBtn: "Settlement",
+        scheduleTitle: "Settlement Schedule (Who pays whom)",
+        copyZaloBtn: "Copy for Chat / Zalo",
+        copiedMsg: "Settlement summary copied! You can paste it into your chat.",
+        noTransactions: "Game is tied or no scores entered yet.",
+        showPoints: "Show score",
+        hidePoints: "Hide score",
+        eyeTitle: "Show/Hide Total Score Row",
+        playerListTitle: "Player list",
+        resetGameTitle: "Reset game table",
+        mobileRoundPrefix: "Round #",
+        mobileInputTitle: "Enter new round score:",
+        resetDraft: "Reset draft",
+        resetDraftTitle: "Clear current unsaved inputs",
+        balancedCheck: "0 ✓ Balanced",
+        unbalancedAlert: "Diff:",
+        autoBalanceBtn: "Auto-balance last player",
+        saveRoundBtn: "Save Round (Enter)",
+        swipeGuide: "👉 Swipe horizontally to view all table columns",
+        colRound: "Round",
+        colTotal: "Total",
+        colActions: "Actions",
+        legendPositive: "Positive: Winner (Green)",
+        legendNegative: "Negative: Loser (Red)",
+        legendChecksum: "Col B: Checksum = 0",
+        legendEnter: "Press <kbd class=\"px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]\">Enter</kbd> to save round",
+        modalPlayerTitle: "Player Management",
+        modalPlayerDesc: "Rename players or adjust player roster:",
+        addPlayerBtn: "Add player",
+        cancelBtn: "Cancel",
+        saveChangesBtn: "Save changes",
+        modalEditRoundTitle: "Edit Round #",
+        modalEditRoundDesc: "Correct misentered scores (All player scores must sum to 0):",
+        balancedSumMsg: "Total: 0 (Balanced ✓)",
+        unbalancedSumMsg: "Total difference:",
+        autoBalanceModalBtn: "Auto-balance last",
+        saveRoundAction: "Save",
+        saveRoundActionTitle: "Save this round (Enter)",
+        clearDraftTitle: "Clear current inputs",
+        autoBalanceTitle: "Auto-balance last player",
+        editRoundTitle: "Edit round #",
+        deleteRoundTitle: "Delete round #",
+        confirmDeleteRound: "Are you sure you want to delete round #{round}?",
+        confirmReset: "Are you sure you want to reset all game data to default?",
+        confirmUnbalancedSave: "Warning: Round total is {sum} (not zero).\nDo you want to save anyway?",
+        confirmEditUnbalancedSave: "Warning: Round #{round} total is {sum} (not zero).\nDo you want to save anyway?",
+        deletePlayerConfirm: "Remove this player?",
+        summaryHeader: "🎰 GAME SUMMARY ({rounds} rounds)",
+        summaryRateLabel: " (Rate: 1 pt = {rate})",
+        summaryScores: "📊 SCORES:",
+        summaryTransfers: "💸 TRANSFERS (WHO PAYS WHOM):",
+        summaryDraw: "All tied!",
+        summaryTransferItem: "👉 {from} transfers to {to}: {amount}",
+        defaultPlayerPrefix: "Player "
+      }
+    };
+
+    const defaultState = {
+      lang: 'vi',
+      mode: 'direct', // 'direct' hoặc 'rate'
+      pointRate: 5000,
+      showTotalRow: true,
+      players: [
+        { id: 'p1', name: 'Bạn A' },
+        { id: 'p2', name: 'Bạn B' },
+        { id: 'p3', name: 'Bạn C' },
+        { id: 'p4', name: 'Bạn D' }
+      ],
+      rounds: [
+        { roundNo: 1, scores: { p1: 10, p2: -5, p3: 5, p4: -10 } },
+        { roundNo: 2, scores: { p1: -5, p2: 10, p3: 5, p4: -10 } }
+      ]
+    };
+
+    let appState = loadState();
+    let activeDraftScores = {};
+
+    function t(key) {
+      const curLang = appState.lang || 'vi';
+      return (i18n[curLang] && i18n[curLang][key]) || (i18n['vi'] && i18n['vi'][key]) || key;
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.rounds && Array.isArray(parsed.rounds)) {
+            parsed.rounds.sort((a, b) => a.roundNo - b.roundNo);
+          }
+          if (parsed.showTotalRow === undefined) parsed.showTotalRow = true;
+          if (!parsed.lang) parsed.lang = 'vi';
+          return parsed;
+        }
+      } catch (e) {
+        console.error("Lỗi đọc storage", e);
+      }
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    }
+
+    // --- CHUYỂN ĐỔI NGÔN NGỮ (VI / EN) ---
+    function setLanguage(lang) {
+      appState.lang = lang;
+      saveState();
+      updateLanguageUI();
+      renderApp();
+      if (!document.getElementById('summaryAccordion').classList.contains('hidden')) {
+        renderSettlementSummary();
+      }
+    }
+
+    function updateLanguageUI() {
+      const isEn = appState.lang === 'en';
+      document.documentElement.lang = appState.lang;
+
+      // Nút gạt ngôn ngữ
+      const btnVi = document.getElementById('btnLangVi');
+      const btnEn = document.getElementById('btnLangEn');
+      if (btnVi && btnEn) {
+        if (isEn) {
+          btnEn.className = 'px-2 py-0.5 rounded text-[11px] bg-white text-emerald-700 shadow-2xs transition font-bold';
+          btnVi.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
+        } else {
+          btnVi.className = 'px-2 py-0.5 rounded text-[11px] bg-white text-emerald-700 shadow-2xs transition font-bold';
+          btnEn.className = 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-800 transition font-normal';
+        }
+      }
+
+      // Cập nhật text trong DOM
+      const setTxt = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      const setHtml = (id, html) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      };
+
+      setTxt('lblAppTitle', t('appTitle'));
+      setTxt('lblAppSubtitle', t('appSubtitle'));
+      setTxt('modeBtnDirect', t('modeDirect'));
+      setTxt('modeBtnRate', t('modeRate'));
+      setTxt('modeBtnDirectMobile', t('modeDirect'));
+      setTxt('modeBtnRateMobile', t('modeRateMobile'));
+      setTxt('lblRatePrefix', t('ratePrefix'));
+      setTxt('lblRateUnit', t('rateUnit'));
+      setTxt('lblRateUnitMobile', t('rateUnit'));
+      setTxt('lblSettlementBtn', t('settlementBtn'));
+      setTxt('lblSettlementBtnMobile', t('settlementBtn'));
+      setTxt('lblScheduleTitle', t('scheduleTitle'));
+      setTxt('lblCopyZaloBtn', t('copyZaloBtn'));
+      setTxt('lblMobileInputTitle', t('mobileInputTitle'));
+      setTxt('lblResetDraft', t('resetDraft'));
+      setTxt('lblAutoBalanceMobile', t('autoBalanceBtn'));
+      setTxt('lblCommitRoundMobile', t('saveRoundBtn'));
+      setTxt('lblSwipeGuide', t('swipeGuide'));
+      setHtml('legendEnterKey', t('legendEnter'));
+      setTxt('legendPositiveText', t('legendPositive'));
+      setTxt('legendNegativeText', t('legendNegative'));
+      setTxt('legendChecksumText', t('legendChecksum'));
+      setTxt('btnSaveDraftTableText', t('saveRoundAction'));
+      
+      // Modals text
+      setTxt('modalPlayerHeaderTitle', t('modalPlayerTitle'));
+      setTxt('modalPlayerDescText', t('modalPlayerDesc'));
+      setTxt('btnAddPlayerText', t('addPlayerBtn'));
+      setTxt('btnCancelPlayerText', t('cancelBtn'));
+      setTxt('btnSavePlayerText', t('saveChangesBtn'));
+      
+      setTxt('modalEditRoundDescText', t('modalEditRoundDesc'));
+      setTxt('btnAutoBalanceEditText', t('autoBalanceModalBtn'));
+      setTxt('btnCancelEditText', t('cancelBtn'));
+      setTxt('btnSaveEditText', t('saveChangesBtn'));
+    }
+
+    // --- ĐỒNG BỘ ĐƠN GIÁ (DESKTOP & MOBILE) ---
+    function syncRate(val) {
+      const num = Math.max(1, Number(val) || 1000);
+      appState.pointRate = num;
+      const inputDesktop = document.getElementById('pointRateInput');
+      const inputMobile = document.getElementById('pointRateInputMobile');
+      if (inputDesktop && Number(inputDesktop.value) !== num) inputDesktop.value = num;
+      if (inputMobile && Number(inputMobile.value) !== num) inputMobile.value = num;
+      saveState();
+      renderTableHeaders();
+      if (!document.getElementById('summaryAccordion').classList.contains('hidden')) {
+        renderSettlementSummary();
+      }
+    }
+
+    // --- XÓA TOÀN BỘ ĐIỂM ĐANG GÕ DỞ ĐỂ NHẬP LẠI ---
+    function clearActiveDraft() {
+      activeDraftScores = {};
+      appState.players.forEach(p => {
+        const inputTable = document.getElementById(`inputDraft_${p.id}`);
+        if (inputTable) {
+          inputTable.value = '';
+          inputTable.classList.remove('color-positive', 'color-negative');
+          inputTable.classList.add('color-neutral');
+        }
+        const inputMobile = document.getElementById(`mobileInput_${p.id}`);
+        if (inputMobile) {
+          inputMobile.value = '';
+          inputMobile.classList.remove('color-positive', 'color-negative');
+          inputMobile.classList.add('color-neutral');
+        }
+      });
+      updateActiveRowSum();
+      renderTableHeaders();
+      updateTableChecksum();
+    }
+
+    function formatNumber(val) {
+      if (val > 0) return `+${val}`;
+      return `${val}`;
+    }
+
+    function formatCurrency(val) {
+      const isEn = appState.lang === 'en';
+      const unit = isEn ? ' pts' : ' đ';
+      const absVal = Math.abs(val).toLocaleString(isEn ? 'en-US' : 'vi-VN');
+      if (val > 0) return `+${absVal}${unit}`;
+      if (val < 0) return `-${absVal}${unit}`;
+      return `0${unit}`;
+    }
+
+    // --- CON MẮT ẨN/HIỆN TỔNG ĐIỂM ---
+    function toggleTotalVisibility() {
+      appState.showTotalRow = !appState.showTotalRow;
+      saveState();
+      renderApp();
+    }
+
+    // --- CHUYỂN ĐỔI CHẾ ĐỘ TÍNH ---
+    function setCalculationMode(mode) {
+      appState.mode = mode;
+      saveState();
+      updateModeUI();
+      renderApp();
+    }
+
+    function updateModeUI() {
+      const btnDirect = document.getElementById('modeBtnDirect');
+      const btnRate = document.getElementById('modeBtnRate');
+      const rateBox = document.getElementById('rateSettingBox');
+      const btnDirectM = document.getElementById('modeBtnDirectMobile');
+      const btnRateM = document.getElementById('modeBtnRateMobile');
+      const rateBoxM = document.getElementById('rateSettingBoxMobile');
+
+      if (appState.mode === 'rate') {
+        if (btnRate) btnRate.className = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
+        if (btnDirect) btnDirect.className = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
+        if (rateBox) { rateBox.classList.remove('hidden'); rateBox.classList.add('inline-flex'); }
+
+        if (btnRateM) btnRateM.className = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
+        if (btnDirectM) btnDirectM.className = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
+        if (rateBoxM) { rateBoxM.classList.remove('hidden'); rateBoxM.classList.add('inline-flex'); }
+      } else {
+        if (btnDirect) btnDirect.className = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
+        if (btnRate) btnRate.className = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
+        if (rateBox) { rateBox.classList.add('hidden'); rateBox.classList.remove('inline-flex'); }
+
+        if (btnDirectM) btnDirectM.className = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
+        if (btnRateM) btnRateM.className = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
+        if (rateBoxM) { rateBoxM.classList.add('hidden'); rateBoxM.classList.remove('inline-flex'); }
+      }
+    }
+
+    // --- ẨN / HIỆN BẢNG TỔNG KẾT & CHIA TIỀN ---
+    function toggleSummaryPanel() {
+      const panel = document.getElementById('summaryAccordion');
+      const chevron = document.getElementById('summaryChevron');
+      const isHidden = panel.classList.contains('hidden');
+
+      if (isHidden) {
+        renderSettlementSummary();
+        panel.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      } else {
+        panel.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // --- TÍNH TỔNG ĐIỂM ---
+    function calculatePlayerTotals(includeDraft = true) {
+      const totals = {};
+      appState.players.forEach(p => totals[p.id] = 0);
+
+      appState.rounds.forEach(r => {
+        appState.players.forEach(p => {
+          totals[p.id] += Number(r.scores[p.id]) || 0;
+        });
+      });
+
+      if (includeDraft) {
+        appState.players.forEach(p => {
+          if (activeDraftScores[p.id] !== undefined && activeDraftScores[p.id] !== '') {
+            totals[p.id] += Number(activeDraftScores[p.id]) || 0;
+          }
+        });
+      }
+
+      return totals;
+    }
+
+    // --- RENDER TỔNG THỂ ---
+    function renderApp() {
+      renderTableHeaders();
+      renderMobileQuickPad();
+      renderActiveDraftRow();
+      renderHistoricalRounds();
+      updateTableChecksum();
+      lucide.createIcons();
+    }
+
+    // Render Hàng 2 (Tổng điểm) & Hàng 3 (Tên người chơi) - Giao diện KHÔNG KẺ KHUNG (Sạch sẽ, Thoáng đãng)
+    function renderTableHeaders() {
+      const totals = calculatePlayerTotals(true);
+      const thTotalsRow = document.getElementById('thPlayerTotalsRow');
+      const playerNamesRow = document.getElementById('playerNamesHeaderRow');
+      const playerTotalsRow = document.getElementById('playerTotalsHeaderRow');
+      const isVisible = appState.showTotalRow !== false;
+
+      // Cập nhật trạng thái con mắt ở Header & Bảng
+      const eyeHeader = document.getElementById('eyeIconHeader');
+      const eyeTable = document.getElementById('eyeIconTable');
+      const eyeText = document.getElementById('eyeToggleText');
+      const lblTotalRow = document.getElementById('lblTotalRowHeader');
+
+      if (lblTotalRow) lblTotalRow.textContent = t('colTotal');
+
+      const eyeIconName = isVisible ? 'eye' : 'eye-off';
+      if (eyeHeader) eyeHeader.setAttribute('data-lucide', eyeIconName);
+      if (eyeTable) eyeTable.setAttribute('data-lucide', eyeIconName);
+      if (eyeText) eyeText.textContent = isVisible ? t('hidePoints') : t('showPoints');
+
+      // Kiểu viền hàng tổng (Không kẻ dọc, viền ngang mờ tinh tế)
+      playerTotalsRow.className = 'bg-slate-100/60 border-b border-slate-200/60';
+      const thTotalFirst = playerTotalsRow.querySelector('th:first-child');
+      if (thTotalFirst) thTotalFirst.className = 'py-2.5 px-2 w-16 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0';
+      const thChecksum = document.getElementById('thTableChecksum');
+      if (thChecksum) thChecksum.className = 'py-2.5 px-2 w-20 text-center border-r-0';
+
+      thTotalsRow.setAttribute('colspan', appState.players.length);
+      thTotalsRow.className = 'p-0 border-r-0';
+
+      // 1. TẠO CÁC Ô TỔNG ĐIỂM Ở HÀNG 2
+      let totalsCellsHtml = `<div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">`;
+      
+      appState.players.forEach(p => {
+        const total = totals[p.id] || 0;
+        const isPos = total > 0;
+        const isNeg = total < 0;
+
+        let displayValue = isVisible ? formatNumber(total) : '<span class="text-slate-400 font-mono tracking-widest text-xs">••••</span>';
+        let subMoney = '';
+
+        if (isVisible && appState.mode === 'rate') {
+          const money = total * appState.pointRate;
+          subMoney = `<div class="text-[9px] font-mono font-medium truncate ${isPos ? 'text-emerald-700' : isNeg ? 'text-rose-700' : 'text-slate-400'}">${formatCurrency(money)}</div>`;
+        }
+
+        totalsCellsHtml += `
+          <div class="py-2.5 px-1 text-center border-r-0 ${
+            !isVisible ? 'bg-slate-50' : isPos ? 'bg-emerald-50/70' : isNeg ? 'bg-rose-50/70' : 'bg-slate-50'
+          }">
+            <div class="font-mono text-sm sm:text-base font-extrabold ${
+              !isVisible ? 'text-slate-400' : isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-slate-400'
+            }">
+              ${displayValue}
+            </div>
+            ${subMoney}
+          </div>
+        `;
+      });
+      totalsCellsHtml += `</div>`;
+      thTotalsRow.innerHTML = totalsCellsHtml;
+
+      // 2. TẠO HÀNG 3: VÁN, TỔNG, TÊN NGƯỜI CHƠI
+      playerNamesRow.className = 'bg-slate-50/70 border-b border-slate-200 text-xs font-bold text-slate-700';
+
+      let namesRowHtml = `
+        <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+          ${t('colRound')}
+        </th>
+        <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+          ${t('colTotal')}
+        </th>
+      `;
+
+      appState.players.forEach((p, idx) => {
+        namesRowHtml += `
+          <th class="py-1.5 px-1 text-center border-r-0">
+            <div class="relative group">
+              <input type="text" value="${p.name}" 
+                onchange="updatePlayerNameInline('${p.id}', this.value)"
+                title="Bấm vào để đổi tên"
+                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-1 border border-slate-200/80 hover:border-emerald-500 focus:border-emerald-500 transition shadow-2xs">
+            </div>
+          </th>
+        `;
+      });
+
+      namesRowHtml += `<th class="py-2.5 px-2 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
+      playerNamesRow.innerHTML = namesRowHtml;
+    }
+
+    function updatePlayerNameInline(playerId, newName) {
+      const p = appState.players.find(x => x.id === playerId);
+      if (p) {
+        p.name = newName.trim() || p.name;
+        saveState();
+        renderApp();
+      }
+    }
+
+    // --- RENDER KHU VỰC NHẬP NHANH TRÊN ĐIỆN THOẠI (MOBILE QUICK PAD) ---
+    function renderMobileQuickPad() {
+      const maxNo = appState.rounds.length > 0 ? Math.max(...appState.rounds.map(r => r.roundNo)) : 0;
+      const nextRoundNo = maxNo + 1;
+      document.getElementById('mobileRoundBadge').textContent = `${t('mobileRoundPrefix')}${nextRoundNo}`;
+
+      const grid = document.getElementById('mobileInputsGrid');
+      grid.innerHTML = '';
+
+      appState.players.forEach((p, idx) => {
+        const val = activeDraftScores[p.id] !== undefined ? activeDraftScores[p.id] : '';
+        const numVal = Number(val);
+        let colorClass = 'color-neutral';
+        if (val !== '' && numVal > 0) colorClass = 'color-positive';
+        if (val !== '' && numVal < 0) colorClass = 'color-negative';
+
+        const div = document.createElement('div');
+        div.className = 'bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs';
+        div.innerHTML = `
+          <span class="text-xs font-bold text-slate-700 truncate max-w-[85px]">${p.name}</span>
+          <input type="number" id="mobileInput_${p.id}" value="${val}" placeholder="0"
+            oninput="handleLiveInput('${p.id}', this, true)"
+            onkeydown="handleDraftKeydown(event, ${idx})"
+            class="w-20 bg-slate-50 text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:bg-white focus:border-emerald-500 focus:outline-none ${colorClass}">
+        `;
+        grid.appendChild(div);
+      });
+
+      updateActiveRowSum();
+    }
+
+    // --- RENDER DÒNG NHẬP VÁN MỚI TRÊN BẢNG (ACTIVE DRAFT ROW) ---
+    function renderActiveDraftRow() {
+      const maxNo = appState.rounds.length > 0 ? Math.max(...appState.rounds.map(r => r.roundNo)) : 0;
+      const nextRoundNo = maxNo + 1;
+      document.getElementById('activeRoundNoBadge').textContent = `#${nextRoundNo}`;
+
+      const container = document.getElementById('tdActiveInputsContainer');
+      container.setAttribute('colspan', appState.players.length);
+
+      const activeRow = document.getElementById('activeInputRow');
+      if (activeRow) {
+        const colA = activeRow.querySelector('td:nth-child(1)');
+        if (colA) colA.className = 'py-2 px-2 text-center border-r-0';
+        const colB = activeRow.querySelector('td:nth-child(2)');
+        if (colB) colB.className = 'py-2 px-2 text-center border-r-0';
+        const colContainer = activeRow.querySelector('td:nth-child(3)');
+        if (colContainer) colContainer.className = 'p-0 border-r-0';
+      }
+
+      let html = `<div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">`;
+
+      appState.players.forEach((p, idx) => {
+        const val = activeDraftScores[p.id] !== undefined ? activeDraftScores[p.id] : '';
+        const numVal = Number(val);
+        let colorClass = 'color-neutral';
+        if (val !== '' && numVal > 0) colorClass = 'color-positive';
+        if (val !== '' && numVal < 0) colorClass = 'color-negative';
+
+        html += `
+          <div class="py-1.5 px-1 border-r-0 last:border-r-0 flex justify-center">
+            <input type="number" id="inputDraft_${p.id}" value="${val}" placeholder="0"
+              oninput="handleLiveInput('${p.id}', this, false)"
+              onkeydown="handleDraftKeydown(event, ${idx})"
+              class="w-full max-w-[85px] bg-white text-center font-mono text-sm sm:text-base rounded-lg py-1 px-1 border-2 border-slate-300 focus:border-emerald-500 focus:outline-none shadow-2xs transition-colors ${colorClass}">
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+      updateActiveRowSum();
+    }
+
+    // --- XỬ LÝ NHẬP ĐIỂM REALTIME: ĐỒNG BỘ CẢ MOBILE LẪN BẢNG ---
+    function handleLiveInput(playerId, inputElem, isFromMobile = false) {
+      const rawVal = inputElem.value;
+      activeDraftScores[playerId] = rawVal;
+      const num = Number(rawVal);
+
+      // Đồng bộ giá trị và đổi màu vào ô đối ứng
+      const counterpartId = isFromMobile ? `inputDraft_${playerId}` : `mobileInput_${playerId}`;
+      const counterpart = document.getElementById(counterpartId);
+      if (counterpart) {
+        counterpart.value = rawVal;
+        counterpart.classList.remove('color-positive', 'color-negative', 'color-neutral');
+        if (rawVal === '' || num === 0) counterpart.classList.add('color-neutral');
+        else if (num > 0) counterpart.classList.add('color-positive');
+        else counterpart.classList.add('color-negative');
+      }
+
+      inputElem.classList.remove('color-positive', 'color-negative', 'color-neutral');
+      if (rawVal === '' || num === 0) inputElem.classList.add('color-neutral');
+      else if (num > 0) inputElem.classList.add('color-positive');
+      else inputElem.classList.add('color-negative');
+
+      updateActiveRowSum();
+      renderTableHeaders();
+      updateTableChecksum();
+    }
+
+    function updateActiveRowSum() {
+      let sum = 0;
+      appState.players.forEach(p => {
+        sum += Number(activeDraftScores[p.id]) || 0;
+      });
+
+      // Badge trên bảng
+      const badgeTable = document.getElementById('activeRowSumBadge');
+      if (badgeTable) {
+        if (sum === 0) {
+          badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs';
+          badgeTable.innerHTML = '0 ✓';
+        } else {
+          badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300 font-mono animate-pulse shadow-2xs';
+          badgeTable.innerHTML = `⚠️ ${sum > 0 ? '+' : ''}${sum}`;
+        }
+      }
+
+      // Badge trên Mobile Pad
+      const badgeMobile = document.getElementById('mobileChecksumBadge');
+      if (badgeMobile) {
+        if (sum === 0) {
+          badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+          badgeMobile.textContent = t('balancedCheck');
+        } else {
+          badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse';
+          badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum} ${t('rateUnit')}!`;
+        }
+      }
+    }
+
+    function updateTableChecksum() {
+      const isVisible = appState.showTotalRow !== false;
+      const th = document.getElementById('thTableChecksum');
+      if (!isVisible) {
+        th.innerHTML = `<span class="text-slate-400 font-mono text-[11px] tracking-widest">••••</span>`;
+        return;
+      }
+
+      const totals = calculatePlayerTotals(true);
+      let sumAll = 0;
+      appState.players.forEach(p => sumAll += totals[p.id]);
+
+      if (sumAll === 0) {
+        th.innerHTML = `<span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-1.5 py-0.5 rounded" title="Tổng bàn cân bằng">0 ✓</span>`;
+      } else {
+        th.innerHTML = `<span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-rose-700 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded animate-pulse" title="Tổng bàn bị lệch">⚠️ ${sumAll > 0 ? '+' : ''}${sumAll}</span>`;
+      }
+    }
+
+    // --- TỰ ĐỘNG CÂN BẰNG NGƯỜI CÒN LẠI ---
+    function autoBalanceActiveRow() {
+      let emptyPlayer = null;
+      let currentSum = 0;
+
+      appState.players.forEach(p => {
+        const val = activeDraftScores[p.id];
+        if (val === undefined || val === '') {
+          emptyPlayer = p;
+        } else {
+          currentSum += Number(val);
+        }
+      });
+
+      if (!emptyPlayer) {
+        emptyPlayer = appState.players[appState.players.length - 1];
+        currentSum -= Number(activeDraftScores[emptyPlayer.id] || 0);
+      }
+
+      if (emptyPlayer) {
+        const needed = -currentSum;
+        activeDraftScores[emptyPlayer.id] = needed;
+
+        const inputTable = document.getElementById(`inputDraft_${emptyPlayer.id}`);
+        if (inputTable) {
+          inputTable.value = needed;
+          handleLiveInput(emptyPlayer.id, inputTable, false);
+        }
+        const inputMobile = document.getElementById(`mobileInput_${emptyPlayer.id}`);
+        if (inputMobile) {
+          inputMobile.value = needed;
+          handleLiveInput(emptyPlayer.id, inputMobile, true);
+        }
+      }
+    }
+
+    function handleDraftKeydown(event, currentIdx) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (currentIdx === appState.players.length - 1) {
+          commitActiveRound();
+        } else {
+          const nextPlayer = appState.players[currentIdx + 1];
+          document.getElementById(`inputDraft_${nextPlayer.id}`)?.focus();
+          document.getElementById(`mobileInput_${nextPlayer.id}`)?.focus();
+        }
+      }
+    }
+
+    // --- LƯU VÁN MỚI (SẮP XẾP CHUẨN XÁC KHÔNG BỊ ĐẢO SỐ THỨ TỰ) ---
+    function commitActiveRound() {
+      let maxNo = 0;
+      appState.rounds.forEach(r => {
+        if (r.roundNo > maxNo) maxNo = r.roundNo;
+      });
+      const nextRoundNo = maxNo + 1;
+
+      const scores = {};
+      let sum = 0;
+
+      appState.players.forEach(p => {
+        const val = Number(activeDraftScores[p.id]) || 0;
+        scores[p.id] = val;
+        sum += val;
+      });
+
+      if (sum !== 0) {
+        const confirmMsg = t('confirmUnbalancedSave').replace('{sum}', (sum > 0 ? '+' : '') + sum);
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+      }
+
+      appState.rounds.push({ roundNo: nextRoundNo, scores });
+      activeDraftScores = {};
+      saveState();
+      renderApp();
+
+      setTimeout(() => {
+        document.getElementById(`inputDraft_${appState.players[0].id}`)?.focus();
+        document.getElementById(`mobileInput_${appState.players[0].id}`)?.focus();
+      }, 50);
+    }
+
+    // --- RENDER LỊCH SỬ CÁC VÁN ĐÃ ĐÁNH ---
+    function renderHistoricalRounds() {
+      const tbody = document.getElementById('activeInputRow').parentNode;
+      const rows = tbody.querySelectorAll('.history-round-row');
+      rows.forEach(r => r.remove());
+
+      const sortedRounds = [...appState.rounds].sort((a, b) => b.roundNo - a.roundNo);
+
+      sortedRounds.forEach((round) => {
+        const tr = document.createElement('tr');
+        tr.className = 'history-round-row hover:bg-slate-50 transition group border-b border-slate-100/90';
+
+        let roundSum = 0;
+        appState.players.forEach(p => {
+          roundSum += Number(round.scores[p.id]) || 0;
+        });
+
+        const isBalanced = roundSum === 0;
+
+        // Cột A: Số ván
+        let html = `
+          <td class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+            ${round.roundNo}
+          </td>
+        `;
+
+        // Cột B: Tổng ván
+        html += `
+          <td class="py-2.5 px-2 text-center border-r-0">
+            ${isBalanced 
+              ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+              : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300">⚠️ ${roundSum > 0 ? '+' : ''}${roundSum}</span>`
+            }
+          </td>
+        `;
+
+        // Điểm từng người
+        html += `<td colspan="${appState.players.length}" class="p-0 border-r-0">
+          <div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">
+        `;
+
+        appState.players.forEach(p => {
+          const sc = Number(round.scores[p.id]) || 0;
+          const isPos = sc > 0;
+          const isNeg = sc < 0;
+
+          html += `
+            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-bold text-xs sm:text-sm ${
+              isPos ? 'text-emerald-600 bg-emerald-50/20' :
+              isNeg ? 'text-rose-600 bg-rose-50/20' :
+              'text-slate-400'
+            }">
+              ${formatNumber(sc)}
+            </div>
+          `;
+        });
+
+        html += `</div></td>`;
+
+        // Thao tác: Sửa điểm ván (✏️) và Xóa ván (🗑️)
+        html += `
+          <td class="py-2.5 px-2 text-center font-sans">
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="openEditRoundModal(${round.roundNo})" class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition" title="${t('editRoundTitle')}${round.roundNo}">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteHistoricalRound(${round.roundNo})" class="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition" title="${t('deleteRoundTitle')}${round.roundNo}">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function deleteHistoricalRound(roundNo) {
+      const confirmMsg = t('confirmDeleteRound').replace('{round}', roundNo);
+      if (confirm(confirmMsg)) {
+        appState.rounds = appState.rounds.filter(r => r.roundNo !== roundNo);
+        appState.rounds.sort((a, b) => a.roundNo - b.roundNo);
+        appState.rounds.forEach((r, idx) => r.roundNo = idx + 1);
+        saveState();
+        renderApp();
+      }
+    }
+
+    // --- CHỨC NĂNG SỬA ĐIỂM VÁN (CHỈNH SỬA KHI NHẬP NHẦM) ---
+    let currentEditingRoundNo = null;
+
+    function openEditRoundModal(roundNo) {
+      const round = appState.rounds.find(r => r.roundNo === roundNo);
+      if (!round) return;
+
+      currentEditingRoundNo = roundNo;
+      document.getElementById('editModalTitle').innerHTML = `
+        <i data-lucide="edit-3" class="w-4 h-4 text-emerald-600"></i>
+        <span>${t('modalEditRoundTitle')}${roundNo}</span>
+      `;
+
+      const container = document.getElementById('editPlayerInputsContainer');
+      container.innerHTML = '';
+
+      appState.players.forEach(p => {
+        const scoreVal = round.scores[p.id] !== undefined ? round.scores[p.id] : 0;
+        const num = Number(scoreVal);
+        let colorClass = 'color-neutral';
+        if (num > 0) colorClass = 'color-positive';
+        if (num < 0) colorClass = 'color-negative';
+
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200';
+        div.innerHTML = `
+          <span class="text-xs font-bold text-slate-700 truncate max-w-[140px]">${p.name}</span>
+          <input type="number" id="editScore_${p.id}" value="${scoreVal}"
+            oninput="handleEditModalInput(this)"
+            class="w-24 bg-white text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:border-emerald-500 focus:outline-none shadow-2xs ${colorClass}">
+        `;
+        container.appendChild(div);
+      });
+
+      updateEditModalChecksum();
+      const modal = document.getElementById('editRoundModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function handleEditModalInput(inputElem) {
+      const raw = inputElem.value;
+      const num = Number(raw);
+      inputElem.classList.remove('color-positive', 'color-negative', 'color-neutral');
+      if (raw === '' || num === 0) inputElem.classList.add('color-neutral');
+      else if (num > 0) inputElem.classList.add('color-positive');
+      else inputElem.classList.add('color-negative');
+      updateEditModalChecksum();
+    }
+
+    function updateEditModalChecksum() {
+      let sum = 0;
+      appState.players.forEach(p => {
+        const val = Number(document.getElementById(`editScore_${p.id}`)?.value) || 0;
+        sum += val;
+      });
+
+      const box = document.getElementById('editModalChecksumBox');
+      const msg = document.getElementById('editModalChecksumMsg');
+      const valElem = document.getElementById('editModalChecksumVal');
+
+      valElem.textContent = sum > 0 ? `+${sum}` : sum;
+      if (sum === 0) {
+        box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-emerald-50 border-emerald-300 text-emerald-800';
+        msg.textContent = t('balancedSumMsg');
+      } else {
+        box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-rose-50 border-rose-300 text-rose-800';
+        msg.textContent = `${t('unbalancedSumMsg')} ${sum > 0 ? '+' : ''}${sum} ${t('rateUnit')}! ⚠️`;
+      }
+    }
+
+    function autoBalanceEditModal() {
+      let emptyPlayer = null;
+      let currentSum = 0;
+
+      appState.players.forEach(p => {
+        const input = document.getElementById(`editScore_${p.id}`);
+        if (!input.value || input.value.trim() === '') {
+          emptyPlayer = p;
+        } else {
+          currentSum += Number(input.value);
+        }
+      });
+
+      if (!emptyPlayer && appState.players.length > 0) {
+        emptyPlayer = appState.players[appState.players.length - 1];
+        currentSum -= Number(document.getElementById(`editScore_${emptyPlayer.id}`).value || 0);
+      }
+
+      if (emptyPlayer) {
+        const needed = -currentSum;
+        const targetInput = document.getElementById(`editScore_${emptyPlayer.id}`);
+        targetInput.value = needed;
+        handleEditModalInput(targetInput);
+      }
+    }
+
+    function saveEditRoundFromModal() {
+      const round = appState.rounds.find(r => r.roundNo === currentEditingRoundNo);
+      if (!round) return;
+
+      let sum = 0;
+      const newScores = {};
+      appState.players.forEach(p => {
+        const val = Number(document.getElementById(`editScore_${p.id}`)?.value) || 0;
+        newScores[p.id] = val;
+        sum += val;
+      });
+
+      if (sum !== 0) {
+        const confirmMsg = t('confirmEditUnbalancedSave')
+          .replace('{round}', currentEditingRoundNo)
+          .replace('{sum}', (sum > 0 ? '+' : '') + sum);
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+      }
+
+      round.scores = newScores;
+      saveState();
+      closeEditRoundModal();
+      renderApp();
+    }
+
+    function closeEditRoundModal() {
+      const modal = document.getElementById('editRoundModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      currentEditingRoundNo = null;
+    }
+
+    // --- BẢNG TỔNG KẾT & CHIA TIỀN (SETTLEMENT) ---
+    function renderSettlementSummary() {
+      const container = document.getElementById('summarySettlementGrid');
+      container.innerHTML = '';
+
+      const totals = calculatePlayerTotals(false);
+      const rate = appState.mode === 'rate' ? appState.pointRate : 1;
+
+      let debtors = [];
+      let creditors = [];
+
+      appState.players.forEach(p => {
+        const net = totals[p.id] * rate;
+        if (net < 0) debtors.push({ name: p.name, amount: Math.abs(net) });
+        else if (net > 0) creditors.push({ name: p.name, amount: net });
+      });
+
+      const transactions = [];
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
+        const settleAmount = Math.min(debtor.amount, creditor.amount);
+
+        if (settleAmount > 0) {
+          transactions.push({
+            from: debtor.name,
+            to: creditor.name,
+            amount: settleAmount
+          });
+        }
+
+        debtor.amount -= settleAmount;
+        creditor.amount -= settleAmount;
+
+        if (debtor.amount === 0) i++;
+        if (creditor.amount === 0) j++;
+      }
+
+      if (transactions.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-3 text-center text-xs text-slate-400 font-medium">${t('noTransactions')}</div>`;
+        return;
+      }
+
+      transactions.forEach(tItem => {
+        const card = document.createElement('div');
+        card.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs';
+        card.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-rose-600">${tItem.from}</span>
+            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-400"></i>
+            <span class="font-bold text-emerald-600">${tItem.to}</span>
+          </div>
+          <span class="font-mono font-bold text-xs sm:text-sm text-slate-900">${formatCurrency(tItem.amount)}</span>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function copySettlementMessage() {
+      const totals = calculatePlayerTotals(false);
+      const rate = appState.mode === 'rate' ? appState.pointRate : 1;
+      const isEn = appState.lang === 'en';
+      const rateStr = appState.mode === 'rate' 
+        ? t('summaryRateLabel').replace('{rate}', appState.pointRate.toLocaleString(isEn ? 'en-US' : 'vi-VN'))
+        : '';
+
+      let debtors = [];
+      let creditors = [];
+
+      appState.players.forEach(p => {
+        const net = totals[p.id] * rate;
+        if (net < 0) debtors.push({ name: p.name, amount: Math.abs(net) });
+        else if (net > 0) creditors.push({ name: p.name, amount: net });
+      });
+
+      const transactions = [];
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
+        const settleAmount = Math.min(debtor.amount, creditor.amount);
+        if (settleAmount > 0) {
+          transactions.push({ from: debtor.name, to: creditor.name, amount: settleAmount });
+        }
+        debtor.amount -= settleAmount;
+        creditor.amount -= settleAmount;
+        if (debtor.amount === 0) i++;
+        if (creditor.amount === 0) j++;
+      }
+
+      let msg = `${t('summaryHeader').replace('{rounds}', appState.rounds.length)}${rateStr}\n`;
+      msg += `------------------------------------\n`;
+      msg += `${t('summaryScores')}\n`;
+      appState.players.forEach(p => {
+        const sc = totals[p.id];
+        const mn = sc * rate;
+        msg += `• ${p.name}: ${formatNumber(sc)} ${appState.mode === 'rate' ? `(${formatCurrency(mn)})` : ''}\n`;
+      });
+      msg += `------------------------------------\n`;
+      msg += `${t('summaryTransfers')}\n`;
+      if (transactions.length === 0) {
+        msg += `${t('summaryDraw')}\n`;
+      } else {
+        transactions.forEach(tItem => {
+          msg += t('summaryTransferItem')
+            .replace('{from}', tItem.from)
+            .replace('{to}', tItem.to)
+            .replace('{amount}', formatCurrency(tItem.amount)) + '\n';
+        });
+      }
+
+      navigator.clipboard.writeText(msg).then(() => {
+        alert(t('copiedMsg'));
+      });
+    }
+
+    // --- MODAL CÀI ĐẶT NGƯỜI CHƠI ---
+    function openPlayerModal() {
+      const modal = document.getElementById('playerModal');
+      const container = document.getElementById('playerEditList');
+      container.innerHTML = '';
+
+      appState.players.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2';
+        div.innerHTML = `
+          <span class="text-xs text-slate-400 font-mono w-6 text-center font-bold">#${idx + 1}</span>
+          <input type="text" id="modalPlayerName_${p.id}" value="${p.name}" class="flex-1 bg-white text-slate-800 font-semibold rounded-lg px-3 py-1.5 border border-slate-300 text-xs focus:border-emerald-500 focus:outline-none">
+          ${appState.players.length > 2 ? `
+            <button onclick="removePlayer('${p.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Xóa người này">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          ` : ''}
+        `;
+        container.appendChild(div);
+      });
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closePlayerModal() {
+      const modal = document.getElementById('playerModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function addNewPlayerInput() {
+      const charLetter = String.fromCharCode(65 + appState.players.length);
+      const prefix = t('defaultPlayerPrefix');
+      appState.players.push({ id: 'p' + Date.now(), name: `${prefix}${charLetter}` });
+      openPlayerModal();
+    }
+
+    function removePlayer(playerId) {
+      if (confirm(t('deletePlayerConfirm'))) {
+        appState.players = appState.players.filter(p => p.id !== playerId);
+        openPlayerModal();
+      }
+    }
+
+    function savePlayersFromModal() {
+      appState.players.forEach(p => {
+        const input = document.getElementById(`modalPlayerName_${p.id}`);
+        if (input && input.value.trim() !== '') {
+          p.name = input.value.trim();
+        }
+      });
+      saveState();
+      closePlayerModal();
+      renderApp();
+    }
+
+    function resetDataPrompt() {
+      if (confirm(t('confirmReset'))) {
+        const curLang = appState.lang || 'vi';
+        appState = JSON.parse(JSON.stringify(defaultState));
+        appState.lang = curLang;
+        activeDraftScores = {};
+        saveState();
+        updateLanguageUI();
+        renderApp();
+      }
+    }
+
+    // Khởi tạo app
+    document.addEventListener('DOMContentLoaded', () => {
+      updateLanguageUI();
+      updateModeUI();
+      syncRate(appState.pointRate);
+      renderApp();
+    });
+  </script>
+</body>
+</html>
