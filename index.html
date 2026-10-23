@@ -366,9 +366,9 @@
         0 ✓ Cân bằng
       </div>
 
-      <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (luôn nằm gọn gàng bên phải, không làm mất focus bàn phím) -->
-      <button type="button" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="clearActiveDraft()" class="ml-auto text-xs text-slate-600 hover:text-rose-600 active:text-rose-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 active:bg-rose-100 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
-        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400"></i>
+      <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại và focus ngay lại ô đầu tiên -->
+      <button type="button" onclick="clearActiveDraft()" class="ml-auto text-xs text-slate-600 hover:text-rose-600 active:text-rose-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 active:bg-rose-100 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
+        <i id="iconResetDraft" data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-300"></i>
         <span id="lblResetDraft">Nhập lại</span>
       </button>
     </div>
@@ -811,6 +811,13 @@
 
     // --- XÓA TOÀN BỘ ĐIỂM ĐANG GÕ DỞ ĐỂ NHẬP LẠI ---
     function clearActiveDraft() {
+      // Hiệu ứng xoay icon Nhập lại phản hồi tức thì
+      const icon = document.getElementById('iconResetDraft');
+      if (icon) {
+        icon.classList.add('rotate-180');
+        setTimeout(() => icon.classList.remove('rotate-180'), 300);
+      }
+
       activeDraftScores = {};
       appState.players.forEach(p => {
         const inputTable = document.getElementById(`inputDraft_${p.id}`);
@@ -842,7 +849,6 @@
           : document.getElementById(`inputDraft_${firstPlayer.id}`);
         if (targetInp) {
           targetInp.focus();
-          setTimeout(() => targetInp.focus(), 60);
         }
       }
     }
@@ -1149,38 +1155,17 @@
     }
 
     // --- ĐIỀU KHIỂN BOTTOM SHEET NHẬP ĐIỂM TRÊN ĐIỆN THOẠI (OPTION 2) ---
-    // Tự động nâng Bottom Sheet lên trên bàn phím ảo để nút Lưu luôn thấy rõ, không bị che
-    function syncSheetPositionWithKeyboard() {
-      const padBox = document.getElementById('mobileQuickPadBox');
-      if (!padBox || padBox.classList.contains('translate-y-full')) return;
-
-      if (window.visualViewport) {
-        const keyboardHeight = Math.max(0, window.innerHeight - window.visualViewport.height);
-        padBox.style.bottom = `${keyboardHeight}px`;
-        padBox.style.maxHeight = `${Math.min(window.visualViewport.height - 10, 520)}px`;
-      }
-    }
-
-    if (typeof window !== 'undefined' && window.visualViewport) {
-      window.visualViewport.addEventListener('resize', syncSheetPositionWithKeyboard);
-      window.visualViewport.addEventListener('scroll', syncSheetPositionWithKeyboard);
-    }
-
     function openMobileInputSheet() {
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
       if (backdrop) backdrop.classList.remove('hidden');
       if (padBox) {
         padBox.classList.remove('translate-y-full');
-        syncSheetPositionWithKeyboard();
-        lucide.createIcons();
-        setTimeout(() => {
-          const firstInput = padBox.querySelector('input');
-          if (firstInput) {
-            firstInput.focus();
-            syncSheetPositionWithKeyboard();
-          }
-        }, 200);
+        // Kích hoạt focus ngay tức thì trong luồng chạm để bàn phím bật lên đồng bộ, không bị khựng
+        const firstInput = padBox.querySelector('input');
+        if (firstInput) {
+          firstInput.focus();
+        }
       }
     }
 
@@ -1190,8 +1175,6 @@
       if (backdrop) backdrop.classList.add('hidden');
       if (padBox) {
         padBox.classList.add('translate-y-full');
-        padBox.style.bottom = '0px';
-        padBox.style.maxHeight = '';
       }
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
