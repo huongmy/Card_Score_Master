@@ -449,7 +449,7 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    const STORAGE_KEY = 'CARD_SCORE_APP_DATA_V5';
+    const STORAGE_KEY = 'CARD_SCORE_APP_DATA_V6';
 
     // BỘ TỪ ĐIỂN SONG NGỮ (VI / EN)
     const i18n = {
@@ -514,7 +514,9 @@
         summaryTransfers: "💸 CHUYỂN KHOẢN (AI TRẢ AI):",
         summaryDraw: "Hòa nhau!",
         summaryTransferItem: "👉 {from} chuyển cho {to}: {amount}",
-        defaultPlayerPrefix: "Bạn "
+        defaultPlayerPrefix: "Bạn ",
+        statusDrafting: "Đang nhập",
+        statusRound1: "Ván 1"
       },
       en: {
         appTitle: "Card Score Master",
@@ -577,7 +579,9 @@
         summaryTransfers: "💸 TRANSFERS (WHO PAYS WHOM):",
         summaryDraw: "All tied!",
         summaryTransferItem: "👉 {from} transfers to {to}: {amount}",
-        defaultPlayerPrefix: "Player "
+        defaultPlayerPrefix: "Player ",
+        statusDrafting: "Draft",
+        statusRound1: "Round 1"
       }
     };
 
@@ -592,10 +596,7 @@
         { id: 'p3', name: 'Bạn C' },
         { id: 'p4', name: 'Bạn D' }
       ],
-      rounds: [
-        { roundNo: 1, scores: { p1: 10, p2: -5, p3: 5, p4: -10 } },
-        { roundNo: 2, scores: { p1: -5, p2: 10, p3: 5, p4: -10 } }
-      ]
+      rounds: [] // Khởi đầu sạch sẽ, bắt đầu từ Ván #1
     };
 
     let appState = loadState();
@@ -608,11 +609,22 @@
 
     function loadState() {
       try {
+        // Tự động dọn sạch storage cũ từ các phiên bản test trước nếu có
+        localStorage.removeItem('CARD_SCORE_APP_DATA_V5');
+
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed.rounds && Array.isArray(parsed.rounds)) {
             parsed.rounds.sort((a, b) => a.roundNo - b.roundNo);
+            // Nếu phát hiện dữ liệu mock mẫu cũ (+10, -5), reset về rỗng
+            if (parsed.rounds.length === 2 && 
+                parsed.rounds[0].scores?.p1 === 10 && 
+                parsed.rounds[1].scores?.p1 === -5) {
+              parsed.rounds = [];
+            }
+          } else {
+            parsed.rounds = [];
           }
           if (parsed.showTotalRow === undefined) parsed.showTotalRow = true;
           if (!parsed.lang) parsed.lang = 'vi';
@@ -738,6 +750,9 @@
       updateActiveRowSum();
       renderTableHeaders();
       updateTableChecksum();
+      if (appState.rounds.length === 0) {
+        renderHistoricalRounds();
+      }
     }
 
     function formatNumber(val) {
@@ -1044,6 +1059,9 @@
       updateActiveRowSum();
       renderTableHeaders();
       updateTableChecksum();
+      if (appState.rounds.length === 0) {
+        renderHistoricalRounds();
+      }
     }
 
     function updateActiveRowSum() {
@@ -1187,6 +1205,82 @@
       rows.forEach(r => r.remove());
 
       const sortedRounds = [...appState.rounds].sort((a, b) => b.roundNo - a.roundNo);
+
+      // NẾU CHƯA CÓ VÁN NÀO ĐƯỢC LƯU (BÀN CHƠI MỚI TINH):
+      // Hiển thị Ván #1 với điểm 0 (hoặc số điểm đang gõ dở) theo đúng yêu cầu
+      if (sortedRounds.length === 0) {
+        const tr = document.createElement('tr');
+        tr.className = 'history-round-row hover:bg-slate-50 transition border-b border-slate-100/90';
+
+        let draftSum = 0;
+        let hasAnyInput = false;
+        appState.players.forEach(p => {
+          const val = activeDraftScores[p.id];
+          if (val !== undefined && val !== '') {
+            hasAnyInput = true;
+            draftSum += Number(val);
+          }
+        });
+
+        const isBalanced = draftSum === 0;
+
+        // Cột A: Số ván là 1
+        let html = `
+          <td class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+            1
+          </td>
+        `;
+
+        // Cột B: Checksum ván 1
+        html += `
+          <td class="py-2.5 px-2 text-center border-r-0">
+            ${isBalanced 
+              ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+              : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">⚠️ ${draftSum > 0 ? '+' : ''}${draftSum}</span>`
+            }
+          </td>
+        `;
+
+        // Điểm từng người: Mặc định là 0, hoặc hiển thị realtime số đang gõ
+        html += `<td colspan="${appState.players.length}" class="p-0 border-r-0">
+          <div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">
+        `;
+
+        appState.players.forEach(p => {
+          const val = activeDraftScores[p.id];
+          const hasVal = val !== undefined && val !== '';
+          const sc = hasVal ? Number(val) : 0;
+          const isPos = sc > 0;
+          const isNeg = sc < 0;
+
+          html += `
+            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-bold text-xs sm:text-sm ${
+              !hasVal ? 'text-slate-400' :
+              isPos ? 'text-emerald-600 bg-emerald-50/20' :
+              isNeg ? 'text-rose-600 bg-rose-50/20' :
+              'text-slate-400'
+            }">
+              ${hasVal ? formatNumber(sc) : '0'}
+            </div>
+          `;
+        });
+
+        html += `</div></td>`;
+
+        // Cột Thao tác: Nhãn hiển thị trạng thái Ván 1 / Đang nhập
+        const statusLabel = hasAnyInput ? t('statusDrafting') : t('statusRound1');
+        html += `
+          <td class="py-2.5 px-2 text-center font-sans">
+            <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+              ${statusLabel}
+            </span>
+          </td>
+        `;
+
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+        return;
+      }
 
       sortedRounds.forEach((round) => {
         const tr = document.createElement('tr');
