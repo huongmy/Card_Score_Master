@@ -107,26 +107,19 @@
 
         <!-- CỤM CÔNG CỤ TRUNG TÂM TRÊN WEB (Gom gọn gàng ngay cạnh bảng, chuẩn công thái học) -->
         <div class="hidden md:flex items-center gap-2.5">
-          <!-- Chế độ tính -->
+          <!-- Chế độ tính: 2 Chế độ Rõ ràng -->
           <div class="inline-flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
-            <button id="modeBtnDirect" onclick="setCalculationMode('direct')" class="px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition">
-              Có nhiêu tính nhiêu
+            <button id="modeBtnZeroSum" onclick="setCalculationMode('zero_sum')" class="px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition">
+              Ăn thua bù trừ
             </button>
-            <button id="modeBtnRate" onclick="setCalculationMode('rate')" class="px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition">
-              Quy đổi 1đ = X tiền
+            <button id="modeBtnAccumulate" onclick="setCalculationMode('accumulate')" class="px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition">
+              Cộng dồn đua điểm
             </button>
           </div>
 
-          <!-- Đơn giá khi chọn mode Quy đổi -->
-          <div id="rateSettingBox" class="hidden items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 text-xs text-amber-900">
-            <span class="text-amber-700 font-medium text-[11px]" id="lblRatePrefix">1đ =</span>
-            <input type="number" id="pointRateInput" value="5000" step="1000" onchange="syncRate(this.value)" class="w-16 bg-white text-amber-800 font-bold font-mono text-right rounded px-1.5 py-0.5 border border-amber-300 text-xs focus:outline-none">
-            <span class="text-amber-700 font-medium text-[11px]" id="lblRateUnit">đ</span>
-          </div>
-
-          <!-- Nút chia tiền -->
+          <!-- Nút chia tiền HOẶC Bảng xếp hạng -->
           <button onclick="toggleSummaryPanel()" id="btnToggleSummary" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs">
-            <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <i id="summaryBtnIcon" data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-400"></i>
             <span id="lblSettlementBtn">Chia tiền</span>
             <i id="summaryChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
           </button>
@@ -163,22 +156,17 @@
       <div class="md:hidden border-t border-slate-100 py-1.5 flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
           <div class="inline-flex bg-slate-100 p-0.5 rounded-lg text-xs">
-            <button id="modeBtnDirectMobile" onclick="setCalculationMode('direct')" class="px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition">
-              Có nhiêu tính nhiêu
+            <button id="modeBtnZeroSumMobile" onclick="setCalculationMode('zero_sum')" class="px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition">
+              Ăn thua bù trừ
             </button>
-            <button id="modeBtnRateMobile" onclick="setCalculationMode('rate')" class="px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition">
-              Quy đổi điểm
+            <button id="modeBtnAccumulateMobile" onclick="setCalculationMode('accumulate')" class="px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition">
+              Cộng dồn đua điểm
             </button>
-          </div>
-
-          <div id="rateSettingBoxMobile" class="hidden items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-1.5 py-0.5 text-xs text-amber-900">
-            <input type="number" id="pointRateInputMobile" value="5000" step="1000" onchange="syncRate(this.value)" class="w-12 bg-white text-amber-800 font-bold font-mono text-right rounded px-1 py-0.5 border border-amber-300 text-xs focus:outline-none">
-            <span class="text-amber-700 font-medium text-[10px]" id="lblRateUnitMobile">đ</span>
           </div>
         </div>
 
         <button onclick="toggleSummaryPanel()" id="btnToggleSummaryMobile" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shrink-0">
-          <i data-lucide="receipt" class="w-3 h-3 text-emerald-400"></i>
+          <i id="summaryBtnIconMobile" data-lucide="receipt" class="w-3 h-3 text-emerald-400"></i>
           <span id="lblSettlementBtnMobile">Chia tiền</span>
         </button>
       </div>
@@ -186,18 +174,18 @@
     </div>
   </header>
 
-  <!-- ACCORDION / DRAWER: BẢNG TỔNG KẾT & CHIA TIỀN -->
+  <!-- ACCORDION / DRAWER: BẢNG TỔNG KẾT & CHIA TIỀN HOẶC BẢNG XẾP HẠNG -->
   <section id="summaryAccordion" class="hidden border-b border-slate-200 bg-white shadow-md animate-in slide-in-from-top-2 duration-150">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div class="p-1 rounded-md bg-emerald-100 text-emerald-800">
-            <i data-lucide="wallet" class="w-4 h-4"></i>
+          <div id="summaryIconBadge" class="p-1 rounded-md bg-emerald-100 text-emerald-800">
+            <i id="summaryDrawerIcon" data-lucide="wallet" class="w-4 h-4"></i>
           </div>
           <h2 class="text-xs sm:text-sm font-bold text-slate-900" id="lblScheduleTitle">Lịch Trình Chuyển Tiền (Ai trả ai)</h2>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="copySettlementMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
+          <button onclick="copySummaryMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
             <span id="lblCopyZaloBtn">Sao chép gửi Zalo</span>
           </button>
@@ -246,9 +234,9 @@
         <!-- Rendered by JS -->
       </div>
 
-      <!-- Nút thao tác trên điện thoại: Chỉ 2 nút lớn cân đối 50/50 -->
+      <!-- Nút thao tác trên điện thoại -->
       <div class="flex items-center gap-2">
-        <button type="button" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+        <button type="button" id="btnAutoBalanceMobile" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
           <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
           <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
         </button>
@@ -339,7 +327,7 @@
                   <button type="button" onclick="clearActiveDraft()" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title="Xóa trắng các ô đang nhập">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-500"></i>
                   </button>
-                  <button type="button" onclick="autoBalanceActiveRow()" class="px-1.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded text-xs border border-amber-300 transition" title="Tự cân người cuối">
+                  <button type="button" id="btnAutoBalanceTable" onclick="autoBalanceActiveRow()" class="px-1.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded text-xs border border-amber-300 transition" title="Tự cân người cuối">
                     <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
                   </button>
                   <button type="button" id="btnCommitRoundTable" onclick="commitActiveRound()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition shadow-2xs flex items-center gap-0.5 opacity-60" title="Lưu ván này (Enter)">
@@ -446,7 +434,7 @@
         </div>
 
         <!-- Nút Tự Cân Người Cuối Cùng -->
-        <div class="flex justify-end pt-1">
+        <div id="editModalAutoBalanceContainer" class="flex justify-end pt-1">
           <button type="button" onclick="autoBalanceEditModal()" class="text-xs text-amber-800 hover:text-amber-900 font-bold bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs">
             <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
             <span id="btnAutoBalanceEditText">Tự cân người còn lại</span>
@@ -475,16 +463,17 @@
       vi: {
         appTitle: "Sổ Tính Điểm Bài",
         appSubtitle: "Chuẩn định dạng Excel • Tự động tính real-time",
-        modeDirect: "Có nhiêu tính nhiêu",
-        modeRate: "Quy đổi 1đ = X tiền",
-        modeRateMobile: "Quy đổi điểm",
-        ratePrefix: "1đ =",
-        rateUnit: "đ",
+        modeZeroSum: "Ăn thua bù trừ",
+        modeAccumulate: "Cộng dồn đua điểm",
         settlementBtn: "Chia tiền",
+        leaderboardBtn: "Bảng xếp hạng",
         scheduleTitle: "Lịch Trình Chuyển Tiền (Ai trả ai)",
+        leaderboardTitle: "Bảng Xếp Hạng Đua Điểm 🏆",
         copyZaloBtn: "Sao chép gửi Zalo",
-        copiedMsg: "Đã sao chép nội dung chia tiền! Bạn có thể dán vào nhóm Zalo.",
+        copiedSettlementMsg: "Đã sao chép nội dung chia tiền! Bạn có thể dán vào nhóm Zalo.",
+        copiedLeaderboardMsg: "Đã sao chép bảng xếp hạng! Bạn có thể dán vào nhóm Zalo.",
         noTransactions: "Bàn cờ đang hòa hoặc chưa có điểm phát sinh.",
+        noLeaderboardData: "Chưa có ván nào có điểm được ghi nhận.",
         showPoints: "Hiện điểm",
         hidePoints: "Ẩn điểm",
         eyeTitle: "Ẩn/Hiện hàng tổng điểm",
@@ -504,7 +493,8 @@
         colActions: "Thao tác",
         legendPositive: "Dương: Thắng (Xanh)",
         legendNegative: "Âm: Thua (Đỏ)",
-        legendChecksum: "Cột B: Kiểm tra tổng = 0",
+        legendChecksumZeroSum: "Cột B: Kiểm tra tổng = 0",
+        legendChecksumAccumulate: "Cột B: Tổng điểm ván",
         legendEnter: "Nhấn phím <kbd class=\"px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]\">Enter</kbd> để lưu ván",
         modalPlayerTitle: "Danh Sách Người Chơi",
         modalPlayerDesc: "Đổi tên người chơi hoặc thêm/bớt số người tham gia ván bài:",
@@ -512,9 +502,11 @@
         cancelBtn: "Hủy",
         saveChangesBtn: "Lưu thay đổi",
         modalEditRoundTitle: "Sửa Điểm Ván #",
-        modalEditRoundDesc: "Chỉnh sửa lại số điểm bị ghi nhầm (Tổng điểm các người chơi phải = 0):",
+        modalEditRoundDescZeroSum: "Chỉnh sửa lại số điểm bị ghi nhầm (Tổng điểm các người chơi phải = 0):",
+        modalEditRoundDescAccumulate: "Chỉnh sửa lại số điểm ghi nhận cho từng người chơi:",
         balancedSumMsg: "Tổng điểm: 0 (Đã cân bằng ✓)",
         unbalancedSumMsg: "Tổng điểm bị lệch:",
+        accumulateSumMsg: "Tổng điểm ván này:",
         autoBalanceModalBtn: "Tự cân người còn lại",
         saveRoundAction: "Lưu",
         saveRoundActionTitle: "Lưu ván này (Enter)",
@@ -528,29 +520,31 @@
         confirmEditUnbalancedSave: "Cảnh báo: Tổng điểm ván #{round} đang là {sum} (chưa bằng 0).\nBạn có chắc muốn lưu không?",
         deletePlayerConfirm: "Xóa người chơi này?",
         summaryHeader: "🎰 TỔNG KẾT BÀN CHƠI ({rounds} ván)",
-        summaryRateLabel: " (Tỷ lệ: 1đ = {rate}đ)",
         summaryScores: "📊 ĐIỂM SỐ:",
         summaryTransfers: "💸 CHUYỂN KHOẢN (AI TRẢ AI):",
         summaryDraw: "Hòa nhau!",
         summaryTransferItem: "👉 {from} chuyển cho {to}: {amount}",
+        leaderboardHeader: "🏆 BẢNG XẾP HẠNG ĐUA ĐIỂM ({rounds} ván)",
         defaultPlayerPrefix: "Bạn ",
         statusDrafting: "Đang nhập",
         statusRound1: "Ván 1",
-        alertAllZero: "Chưa nhập điểm cho ván này! Điểm của tất cả người chơi không thể đồng thời bằng 0."
+        alertAllZero: "Chưa nhập điểm cho ván này! Điểm của tất cả người chơi không thể đồng thời bằng 0.",
+        pointsUnit: "đ"
       },
       en: {
         appTitle: "Card Score Master",
         appSubtitle: "Excel layout • Real-time auto calculation",
-        modeDirect: "Direct Score",
-        modeRate: "Rate 1 pt = $X",
-        modeRateMobile: "Rate Mode",
-        ratePrefix: "1 pt =",
-        rateUnit: "pts",
+        modeZeroSum: "Net Balance (±0)",
+        modeAccumulate: "Points Race",
         settlementBtn: "Settlement",
+        leaderboardBtn: "Leaderboard",
         scheduleTitle: "Settlement Schedule (Who pays whom)",
+        leaderboardTitle: "Points Race Leaderboard 🏆",
         copyZaloBtn: "Copy for Chat / Zalo",
-        copiedMsg: "Settlement summary copied! You can paste it into your chat.",
+        copiedSettlementMsg: "Settlement summary copied! You can paste it into your chat.",
+        copiedLeaderboardMsg: "Leaderboard copied! You can paste it into your chat.",
         noTransactions: "Game is tied or no scores entered yet.",
+        noLeaderboardData: "No scores entered yet.",
         showPoints: "Show score",
         hidePoints: "Hide score",
         eyeTitle: "Show/Hide Total Score Row",
@@ -570,7 +564,8 @@
         colActions: "Actions",
         legendPositive: "Positive: Winner (Green)",
         legendNegative: "Negative: Loser (Red)",
-        legendChecksum: "Col B: Checksum = 0",
+        legendChecksumZeroSum: "Col B: Checksum = 0",
+        legendChecksumAccumulate: "Col B: Round point sum",
         legendEnter: "Press <kbd class=\"px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]\">Enter</kbd> to save round",
         modalPlayerTitle: "Player Management",
         modalPlayerDesc: "Rename players or adjust player roster:",
@@ -578,9 +573,11 @@
         cancelBtn: "Cancel",
         saveChangesBtn: "Save changes",
         modalEditRoundTitle: "Edit Round #",
-        modalEditRoundDesc: "Correct misentered scores (All player scores must sum to 0):",
+        modalEditRoundDescZeroSum: "Correct misentered scores (All player scores must sum to 0):",
+        modalEditRoundDescAccumulate: "Correct scores entered for each player:",
         balancedSumMsg: "Total: 0 (Balanced ✓)",
         unbalancedSumMsg: "Total difference:",
+        accumulateSumMsg: "Round point sum:",
         autoBalanceModalBtn: "Auto-balance last",
         saveRoundAction: "Save",
         saveRoundActionTitle: "Save this round (Enter)",
@@ -594,22 +591,22 @@
         confirmEditUnbalancedSave: "Warning: Round #{round} total is {sum} (not zero).\nDo you want to save anyway?",
         deletePlayerConfirm: "Remove this player?",
         summaryHeader: "🎰 GAME SUMMARY ({rounds} rounds)",
-        summaryRateLabel: " (Rate: 1 pt = {rate})",
         summaryScores: "📊 SCORES:",
         summaryTransfers: "💸 TRANSFERS (WHO PAYS WHOM):",
         summaryDraw: "All tied!",
         summaryTransferItem: "👉 {from} transfers to {to}: {amount}",
+        leaderboardHeader: "🏆 POINTS RACE LEADERBOARD ({rounds} rounds)",
         defaultPlayerPrefix: "Player ",
         statusDrafting: "Draft",
         statusRound1: "Round 1",
-        alertAllZero: "No scores entered! All player scores cannot be 0."
+        alertAllZero: "No scores entered! All player scores cannot be 0.",
+        pointsUnit: "pts"
       }
     };
 
     const defaultState = {
       lang: 'vi',
-      mode: 'direct', // 'direct' hoặc 'rate'
-      pointRate: 5000,
+      mode: 'zero_sum', // 'zero_sum' (Ăn thua bù trừ) hoặc 'accumulate' (Cộng dồn đua điểm)
       showTotalRow: true,
       players: [
         { id: 'p1', name: 'Bạn A' },
@@ -630,14 +627,12 @@
 
     function loadState() {
       try {
-        // Tự động dọn sạch storage cũ từ các phiên bản test trước nếu có
         localStorage.removeItem('CARD_SCORE_APP_DATA_V5');
 
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed.rounds && Array.isArray(parsed.rounds)) {
-            // Lọc bỏ các ván mock cũ hoặc các ván toàn 0 do bấm nhầm
             parsed.rounds = parsed.rounds.filter(r => {
               const vals = Object.values(r.scores || {});
               return vals.length > 0 && vals.some(sc => Number(sc) !== 0);
@@ -649,6 +644,16 @@
           }
           if (parsed.showTotalRow === undefined) parsed.showTotalRow = true;
           if (!parsed.lang) parsed.lang = 'vi';
+
+          // Tự động chuyển đổi các chế độ cũ nếu có
+          if (parsed.mode === 'direct' || parsed.mode === 'zero_sum') {
+            parsed.mode = 'zero_sum';
+          } else if (parsed.mode === 'rate' || parsed.mode === 'accumulate') {
+            parsed.mode = 'accumulate';
+          } else {
+            parsed.mode = 'zero_sum';
+          }
+
           return parsed;
         }
       } catch (e) {
@@ -666,9 +671,11 @@
       appState.lang = lang;
       saveState();
       updateLanguageUI();
+      updateModeUI();
       renderApp();
-      if (!document.getElementById('summaryAccordion').classList.contains('hidden')) {
-        renderSettlementSummary();
+      const panel = document.getElementById('summaryAccordion');
+      if (panel && !panel.classList.contains('hidden')) {
+        renderSummaryPanel();
       }
     }
 
@@ -701,16 +708,10 @@
 
       setTxt('lblAppTitle', t('appTitle'));
       setTxt('lblAppSubtitle', t('appSubtitle'));
-      setTxt('modeBtnDirect', t('modeDirect'));
-      setTxt('modeBtnRate', t('modeRate'));
-      setTxt('modeBtnDirectMobile', t('modeDirect'));
-      setTxt('modeBtnRateMobile', t('modeRateMobile'));
-      setTxt('lblRatePrefix', t('ratePrefix'));
-      setTxt('lblRateUnit', t('rateUnit'));
-      setTxt('lblRateUnitMobile', t('rateUnit'));
-      setTxt('lblSettlementBtn', t('settlementBtn'));
-      setTxt('lblSettlementBtnMobile', t('settlementBtn'));
-      setTxt('lblScheduleTitle', t('scheduleTitle'));
+      setTxt('modeBtnZeroSum', t('modeZeroSum'));
+      setTxt('modeBtnAccumulate', t('modeAccumulate'));
+      setTxt('modeBtnZeroSumMobile', t('modeZeroSum'));
+      setTxt('modeBtnAccumulateMobile', t('modeAccumulate'));
       setTxt('lblCopyZaloBtn', t('copyZaloBtn'));
       setTxt('lblMobileInputTitle', t('mobileInputTitle'));
       setTxt('lblResetDraft', t('resetDraft'));
@@ -720,7 +721,6 @@
       setHtml('legendEnterKey', t('legendEnter'));
       setTxt('legendPositiveText', t('legendPositive'));
       setTxt('legendNegativeText', t('legendNegative'));
-      setTxt('legendChecksumText', t('legendChecksum'));
       setTxt('btnSaveDraftTableText', t('saveRoundAction'));
       
       // Modals text
@@ -730,25 +730,9 @@
       setTxt('btnCancelPlayerText', t('cancelBtn'));
       setTxt('btnSavePlayerText', t('saveChangesBtn'));
       
-      setTxt('modalEditRoundDescText', t('modalEditRoundDesc'));
       setTxt('btnAutoBalanceEditText', t('autoBalanceModalBtn'));
       setTxt('btnCancelEditText', t('cancelBtn'));
       setTxt('btnSaveEditText', t('saveChangesBtn'));
-    }
-
-    // --- ĐỒNG BỘ ĐƠN GIÁ (DESKTOP & MOBILE) ---
-    function syncRate(val) {
-      const num = Math.max(1, Number(val) || 1000);
-      appState.pointRate = num;
-      const inputDesktop = document.getElementById('pointRateInput');
-      const inputMobile = document.getElementById('pointRateInputMobile');
-      if (inputDesktop && Number(inputDesktop.value) !== num) inputDesktop.value = num;
-      if (inputMobile && Number(inputMobile.value) !== num) inputMobile.value = num;
-      saveState();
-      renderTableHeaders();
-      if (!document.getElementById('summaryAccordion').classList.contains('hidden')) {
-        renderSettlementSummary();
-      }
     }
 
     // --- XÓA TOÀN BỘ ĐIỂM ĐANG GÕ DỞ ĐỂ NHẬP LẠI ---
@@ -803,43 +787,96 @@
       saveState();
       updateModeUI();
       renderApp();
-    }
-
-    function updateModeUI() {
-      const btnDirect = document.getElementById('modeBtnDirect');
-      const btnRate = document.getElementById('modeBtnRate');
-      const rateBox = document.getElementById('rateSettingBox');
-      const btnDirectM = document.getElementById('modeBtnDirectMobile');
-      const btnRateM = document.getElementById('modeBtnRateMobile');
-      const rateBoxM = document.getElementById('rateSettingBoxMobile');
-
-      if (appState.mode === 'rate') {
-        if (btnRate) btnRate.className = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
-        if (btnDirect) btnDirect.className = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
-        if (rateBox) { rateBox.classList.remove('hidden'); rateBox.classList.add('inline-flex'); }
-
-        if (btnRateM) btnRateM.className = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
-        if (btnDirectM) btnDirectM.className = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
-        if (rateBoxM) { rateBoxM.classList.remove('hidden'); rateBoxM.classList.add('inline-flex'); }
-      } else {
-        if (btnDirect) btnDirect.className = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
-        if (btnRate) btnRate.className = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
-        if (rateBox) { rateBox.classList.add('hidden'); rateBox.classList.remove('inline-flex'); }
-
-        if (btnDirectM) btnDirectM.className = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
-        if (btnRateM) btnRateM.className = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
-        if (rateBoxM) { rateBoxM.classList.add('hidden'); rateBoxM.classList.remove('inline-flex'); }
+      const panel = document.getElementById('summaryAccordion');
+      if (panel && !panel.classList.contains('hidden')) {
+        renderSummaryPanel();
       }
     }
 
-    // --- ẨN / HIỆN BẢNG TỔNG KẾT & CHIA TIỀN ---
+    function updateModeUI() {
+      const isZeroSum = appState.mode !== 'accumulate';
+      
+      // Desktop buttons
+      const btnZeroSum = document.getElementById('modeBtnZeroSum');
+      const btnAccumulate = document.getElementById('modeBtnAccumulate');
+      
+      // Mobile buttons
+      const btnZeroSumM = document.getElementById('modeBtnZeroSumMobile');
+      const btnAccumulateM = document.getElementById('modeBtnAccumulateMobile');
+
+      const activeBtnClass = 'px-2.5 py-1 rounded-lg font-bold text-xs text-emerald-800 bg-white shadow-xs transition';
+      const inactiveBtnClass = 'px-2.5 py-1 rounded-lg font-medium text-xs text-slate-600 hover:text-slate-900 transition';
+      const activeBtnMClass = 'px-2 py-1 rounded-md font-bold text-[11px] text-emerald-800 bg-white shadow-xs transition';
+      const inactiveBtnMClass = 'px-2 py-1 rounded-md font-medium text-[11px] text-slate-600 hover:text-slate-900 transition';
+
+      if (isZeroSum) {
+        if (btnZeroSum) btnZeroSum.className = activeBtnClass;
+        if (btnAccumulate) btnAccumulate.className = inactiveBtnClass;
+        if (btnZeroSumM) btnZeroSumM.className = activeBtnMClass;
+        if (btnAccumulateM) btnAccumulateM.className = inactiveBtnMClass;
+      } else {
+        if (btnAccumulate) btnAccumulate.className = activeBtnClass;
+        if (btnZeroSum) btnZeroSum.className = inactiveBtnClass;
+        if (btnAccumulateM) btnAccumulateM.className = activeBtnMClass;
+        if (btnZeroSumM) btnZeroSumM.className = inactiveBtnMClass;
+      }
+
+      // Cập nhật nhãn và icon nút Tổng kết / Bảng xếp hạng
+      const summaryBtnIcon = document.getElementById('summaryBtnIcon');
+      const summaryBtnIconM = document.getElementById('summaryBtnIconMobile');
+      const lblSettlement = document.getElementById('lblSettlementBtn');
+      const lblSettlementM = document.getElementById('lblSettlementBtnMobile');
+      const summaryDrawerIcon = document.getElementById('summaryDrawerIcon');
+      const lblScheduleTitle = document.getElementById('lblScheduleTitle');
+
+      const btnText = isZeroSum ? t('settlementBtn') : t('leaderboardBtn');
+      const drawerTitle = isZeroSum ? t('scheduleTitle') : t('leaderboardTitle');
+      const iconName = isZeroSum ? 'receipt' : 'trophy';
+      const drawerIconName = isZeroSum ? 'wallet' : 'trophy';
+
+      if (lblSettlement) lblSettlement.textContent = btnText;
+      if (lblSettlementM) lblSettlementM.textContent = btnText;
+      if (lblScheduleTitle) lblScheduleTitle.textContent = drawerTitle;
+
+      if (summaryBtnIcon) summaryBtnIcon.setAttribute('data-lucide', iconName);
+      if (summaryBtnIconM) summaryBtnIconM.setAttribute('data-lucide', iconName);
+      if (summaryDrawerIcon) summaryDrawerIcon.setAttribute('data-lucide', drawerIconName);
+
+      // Ẩn/Hiện nút tự cân trên Mobile và trên Bảng
+      const btnAutoMobile = document.getElementById('btnAutoBalanceMobile');
+      const btnAutoTable = document.getElementById('btnAutoBalanceTable');
+      const badgeMobile = document.getElementById('mobileChecksumBadge');
+
+      if (btnAutoMobile) {
+        if (isZeroSum) btnAutoMobile.classList.remove('hidden');
+        else btnAutoMobile.classList.add('hidden');
+      }
+      if (btnAutoTable) {
+        if (isZeroSum) btnAutoTable.classList.remove('hidden');
+        else btnAutoTable.classList.add('hidden');
+      }
+      if (badgeMobile) {
+        if (isZeroSum) badgeMobile.classList.remove('hidden');
+        else badgeMobile.classList.add('hidden');
+      }
+
+      // Cập nhật ghi chú chân bảng
+      const legendChecksum = document.getElementById('legendChecksumText');
+      if (legendChecksum) {
+        legendChecksum.textContent = isZeroSum ? t('legendChecksumZeroSum') : t('legendChecksumAccumulate');
+      }
+
+      lucide.createIcons();
+    }
+
+    // --- ẨN / HIỆN BẢNG TỔNG KẾT & CHIA TIỀN HOẶC BẢNG XẾP HẠNG ---
     function toggleSummaryPanel() {
       const panel = document.getElementById('summaryAccordion');
       const chevron = document.getElementById('summaryChevron');
       const isHidden = panel.classList.contains('hidden');
 
       if (isHidden) {
-        renderSettlementSummary();
+        renderSummaryPanel();
         panel.classList.remove('hidden');
         if (chevron) chevron.style.transform = 'rotate(180deg)';
       } else {
@@ -880,13 +917,14 @@
       lucide.createIcons();
     }
 
-    // Render Hàng 2 (Tổng điểm) & Hàng 3 (Tên người chơi) - Giao diện KHÔNG KẺ KHUNG (Sạch sẽ, Thoáng đãng)
+    // Render Hàng 2 (Tổng điểm) & Hàng 3 (Tên người chơi)
     function renderTableHeaders() {
       const totals = calculatePlayerTotals(true);
       const thTotalsRow = document.getElementById('thPlayerTotalsRow');
       const playerNamesRow = document.getElementById('playerNamesHeaderRow');
       const playerTotalsRow = document.getElementById('playerTotalsHeaderRow');
       const isVisible = appState.showTotalRow !== false;
+      const isAccumulate = appState.mode === 'accumulate';
 
       // Cập nhật trạng thái con mắt ở Header & Bảng
       const eyeHeader = document.getElementById('eyeIconHeader');
@@ -912,46 +950,58 @@
       thTotalsRow.className = 'p-0 border-r-0';
 
       // 1. TẠO CÁC Ô TỔNG ĐIỂM Ở HÀNG 2
+      let maxScore = -Infinity;
+      if (isAccumulate) {
+        appState.players.forEach(p => {
+          const sc = totals[p.id] || 0;
+          if (sc > maxScore) maxScore = sc;
+        });
+      }
+
       let totalsCellsHtml = `<div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">`;
       
       appState.players.forEach(p => {
         const total = totals[p.id] || 0;
         const isPos = total > 0;
         const isNeg = total < 0;
+        const isLeader = isAccumulate && isVisible && (maxScore > 0 || appState.rounds.length > 0) && total === maxScore;
 
-        let displayValue = isVisible ? formatNumber(total) : '<span class="text-slate-400 font-mono tracking-widest text-xs">••••</span>';
-        let subMoney = '';
+        let displayValue = isVisible ? (isAccumulate ? `${total}` : formatNumber(total)) : '<span class="text-slate-400 font-mono tracking-widest text-xs">••••</span>';
 
-        if (isVisible && appState.mode === 'rate') {
-          const money = total * appState.pointRate;
-          subMoney = `<div class="text-[9px] font-mono font-medium truncate ${isPos ? 'text-emerald-700' : isNeg ? 'text-rose-700' : 'text-slate-400'}">${formatCurrency(money)}</div>`;
-        }
+        let cellBg = !isVisible ? 'bg-slate-50' :
+          isLeader ? 'bg-amber-100/70 border-b-2 border-amber-400' :
+          isAccumulate ? (isPos ? 'bg-emerald-50/40' : 'bg-slate-50') :
+          (isPos ? 'bg-emerald-50/70' : isNeg ? 'bg-rose-50/70' : 'bg-slate-50');
+
+        let textClass = !isVisible ? 'text-slate-400' :
+          isLeader ? 'text-amber-800' :
+          isAccumulate ? (isPos ? 'text-emerald-700' : 'text-slate-500') :
+          (isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-slate-400');
+
+        let leaderCrown = isLeader ? '<span class="text-xs mr-0.5" title="Đang dẫn đầu">👑</span>' : '';
 
         totalsCellsHtml += `
-          <div class="py-2.5 px-1 text-center border-r-0 ${
-            !isVisible ? 'bg-slate-50' : isPos ? 'bg-emerald-50/70' : isNeg ? 'bg-rose-50/70' : 'bg-slate-50'
-          }">
-            <div class="font-mono text-sm sm:text-base font-extrabold ${
-              !isVisible ? 'text-slate-400' : isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-slate-400'
-            }">
-              ${displayValue}
+          <div class="py-2.5 px-1 text-center border-r-0 ${cellBg}">
+            <div class="font-mono text-sm sm:text-base font-extrabold flex items-center justify-center ${textClass}">
+              ${leaderCrown}${displayValue}
             </div>
-            ${subMoney}
           </div>
         `;
       });
       totalsCellsHtml += `</div>`;
       thTotalsRow.innerHTML = totalsCellsHtml;
 
-      // 2. TẠO HÀNG 3: VÁN, TỔNG, TÊN NGƯỜI CHƠI
+      // 2. TẠO HÀNG 3: VÁN, TỔNG / ĐIỂM, TÊN NGƯỜI CHƠI
       playerNamesRow.className = 'bg-slate-50/70 border-b border-slate-200 text-xs font-bold text-slate-700';
+
+      const colBTitle = isAccumulate ? (appState.lang === 'en' ? 'Pts' : 'Điểm') : t('colTotal');
 
       let namesRowHtml = `
         <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
           ${t('colRound')}
         </th>
         <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
-          ${t('colTotal')}
+          ${colBTitle}
         </th>
       `;
 
@@ -1106,27 +1156,38 @@
         else btnTable.classList.remove('opacity-60');
       }
 
+      const isAccumulate = appState.mode === 'accumulate';
+
       // Badge trên bảng
       const badgeTable = document.getElementById('activeRowSumBadge');
       if (badgeTable) {
-        if (sum === 0) {
-          badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs';
-          badgeTable.innerHTML = '0 ✓';
+        if (isAccumulate) {
+          badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono shadow-2xs';
+          badgeTable.innerHTML = `${sum} ${t('pointsUnit')}`;
         } else {
-          badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300 font-mono animate-pulse shadow-2xs';
-          badgeTable.innerHTML = `⚠️ ${sum > 0 ? '+' : ''}${sum}`;
+          if (sum === 0) {
+            badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs';
+            badgeTable.innerHTML = '0 ✓';
+          } else {
+            badgeTable.className = 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300 font-mono animate-pulse shadow-2xs';
+            badgeTable.innerHTML = `⚠️ ${sum > 0 ? '+' : ''}${sum}`;
+          }
         }
       }
 
       // Badge trên Mobile Pad
       const badgeMobile = document.getElementById('mobileChecksumBadge');
       if (badgeMobile) {
-        if (sum === 0) {
-          badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
-          badgeMobile.textContent = t('balancedCheck');
+        if (isAccumulate) {
+          badgeMobile.className = 'hidden';
         } else {
-          badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse';
-          badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum} ${t('rateUnit')}!`;
+          if (sum === 0) {
+            badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+            badgeMobile.textContent = t('balancedCheck');
+          } else {
+            badgeMobile.className = 'px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse';
+            badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum} ${t('pointsUnit')}!`;
+          }
         }
       }
     }
@@ -1134,8 +1195,15 @@
     function updateTableChecksum() {
       const isVisible = appState.showTotalRow !== false;
       const th = document.getElementById('thTableChecksum');
+      if (!th) return;
+
       if (!isVisible) {
         th.innerHTML = `<span class="text-slate-400 font-mono text-[11px] tracking-widest">••••</span>`;
+        return;
+      }
+
+      if (appState.mode === 'accumulate') {
+        th.innerHTML = `<span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-amber-700 bg-amber-100/70 border border-amber-200 px-1.5 py-0.5 rounded" title="Chế độ Cộng dồn đua điểm">🏆 ĐUA</span>`;
         return;
       }
 
@@ -1152,6 +1220,8 @@
 
     // --- TỰ ĐỘNG CÂN BẰNG NGƯỜI CÒN LẠI ---
     function autoBalanceActiveRow() {
+      if (appState.mode === 'accumulate') return; // Không dùng ở mode cộng dồn
+
       let emptyPlayer = null;
       let currentSum = 0;
 
@@ -1199,7 +1269,7 @@
       }
     }
 
-    // --- LƯU VÁN MỚI (SẮP XẾP CHUẨN XÁC KHÔNG BỊ ĐẢO SỐ THỨ TỰ) ---
+    // --- LƯU VÁN MỚI ---
     function commitActiveRound() {
       // 1. Kiểm tra chặn lưu nếu tất cả người chơi đều là 0 (chưa nhập điểm)
       let hasAnyNonZero = false;
@@ -1220,8 +1290,8 @@
         return;
       }
 
-      // 2. Kiểm tra tổng ván phải cân bằng = 0
-      if (sum !== 0) {
+      // 2. Chỉ kiểm tra cân bằng tổng = 0 khi ở chế độ Ăn thua bù trừ
+      if (appState.mode === 'zero_sum' && sum !== 0) {
         const confirmMsg = t('confirmUnbalancedSave').replace('{sum}', (sum > 0 ? '+' : '') + sum);
         if (!confirm(confirmMsg)) {
           return;
@@ -1252,9 +1322,9 @@
       rows.forEach(r => r.remove());
 
       const sortedRounds = [...appState.rounds].sort((a, b) => b.roundNo - a.roundNo);
+      const isAccumulate = appState.mode === 'accumulate';
 
       // NẾU CHƯA CÓ VÁN NÀO ĐƯỢC LƯU (BÀN CHƠI MỚI TINH):
-      // Hiển thị Ván #1 với điểm 0 (hoặc số điểm đang gõ dở) theo đúng yêu cầu
       if (sortedRounds.length === 0) {
         const tr = document.createElement('tr');
         tr.className = 'history-round-row hover:bg-slate-50 transition border-b border-slate-100/90';
@@ -1278,13 +1348,19 @@
           </td>
         `;
 
-        // Cột B: Checksum ván 1
+        // Cột B: Checksum ván 1 hoặc tổng điểm
+        let colBContent = '';
+        if (isAccumulate) {
+          colBContent = `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${draftSum} ${t('pointsUnit')}</span>`;
+        } else {
+          colBContent = isBalanced 
+            ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+            : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">⚠️ ${draftSum > 0 ? '+' : ''}${draftSum}</span>`;
+        }
+
         html += `
           <td class="py-2.5 px-2 text-center border-r-0">
-            ${isBalanced 
-              ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
-              : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">⚠️ ${draftSum > 0 ? '+' : ''}${draftSum}</span>`
-            }
+            ${colBContent}
           </td>
         `;
 
@@ -1307,7 +1383,7 @@
               isNeg ? 'text-rose-600 bg-rose-50/20' :
               'text-slate-400'
             }">
-              ${hasVal ? formatNumber(sc) : '0'}
+              ${hasVal ? (isAccumulate ? `${sc}` : formatNumber(sc)) : '0'}
             </div>
           `;
         });
@@ -1347,13 +1423,19 @@
           </td>
         `;
 
-        // Cột B: Tổng ván
+        // Cột B: Tổng ván hoặc Điểm ván
+        let colBContent = '';
+        if (isAccumulate) {
+          colBContent = `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${roundSum} ${t('pointsUnit')}</span>`;
+        } else {
+          colBContent = isBalanced 
+            ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+            : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300">⚠️ ${roundSum > 0 ? '+' : ''}${roundSum}</span>`;
+        }
+
         html += `
           <td class="py-2.5 px-2 text-center border-r-0">
-            ${isBalanced 
-              ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
-              : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300">⚠️ ${roundSum > 0 ? '+' : ''}${roundSum}</span>`
-            }
+            ${colBContent}
           </td>
         `;
 
@@ -1373,7 +1455,7 @@
               isNeg ? 'text-rose-600 bg-rose-50/20' :
               'text-slate-400'
             }">
-              ${formatNumber(sc)}
+              ${isAccumulate ? `${sc}` : formatNumber(sc)}
             </div>
           `;
         });
@@ -1422,6 +1504,19 @@
         <i data-lucide="edit-3" class="w-4 h-4 text-emerald-600"></i>
         <span>${t('modalEditRoundTitle')}${roundNo}</span>
       `;
+
+      const isAccumulate = appState.mode === 'accumulate';
+      const descElem = document.getElementById('modalEditRoundDescText');
+      if (descElem) {
+        descElem.textContent = isAccumulate ? t('modalEditRoundDescAccumulate') : t('modalEditRoundDescZeroSum');
+      }
+
+      // Ẩn/hiện nút tự cân trong modal
+      const autoBalanceWrap = document.getElementById('editModalAutoBalanceContainer');
+      if (autoBalanceWrap) {
+        if (isAccumulate) autoBalanceWrap.classList.add('hidden');
+        else autoBalanceWrap.classList.remove('hidden');
+      }
 
       const container = document.getElementById('editPlayerInputsContainer');
       container.innerHTML = '';
@@ -1472,17 +1567,25 @@
       const msg = document.getElementById('editModalChecksumMsg');
       const valElem = document.getElementById('editModalChecksumVal');
 
-      valElem.textContent = sum > 0 ? `+${sum}` : sum;
-      if (sum === 0) {
-        box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-emerald-50 border-emerald-300 text-emerald-800';
-        msg.textContent = t('balancedSumMsg');
+      if (appState.mode === 'accumulate') {
+        box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-slate-50 border-slate-200 text-slate-700';
+        msg.textContent = t('accumulateSumMsg');
+        valElem.textContent = `${sum} ${t('pointsUnit')}`;
       } else {
-        box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-rose-50 border-rose-300 text-rose-800';
-        msg.textContent = `${t('unbalancedSumMsg')} ${sum > 0 ? '+' : ''}${sum} ${t('rateUnit')}! ⚠️`;
+        valElem.textContent = sum > 0 ? `+${sum}` : sum;
+        if (sum === 0) {
+          box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-emerald-50 border-emerald-300 text-emerald-800';
+          msg.textContent = t('balancedSumMsg');
+        } else {
+          box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-rose-50 border-rose-300 text-rose-800';
+          msg.textContent = `${t('unbalancedSumMsg')} ${sum > 0 ? '+' : ''}${sum} ${t('pointsUnit')}! ⚠️`;
+        }
       }
     }
 
     function autoBalanceEditModal() {
+      if (appState.mode === 'accumulate') return;
+
       let emptyPlayer = null;
       let currentSum = 0;
 
@@ -1527,7 +1630,7 @@
         return;
       }
 
-      if (sum !== 0) {
+      if (appState.mode === 'zero_sum' && sum !== 0) {
         const confirmMsg = t('confirmEditUnbalancedSave')
           .replace('{round}', currentEditingRoundNo)
           .replace('{sum}', (sum > 0 ? '+' : '') + sum);
@@ -1549,19 +1652,25 @@
       currentEditingRoundNo = null;
     }
 
-    // --- BẢNG TỔNG KẾT & CHIA TIỀN (SETTLEMENT) ---
+    // --- BẢNG TỔNG KẾT & CHIA TIỀN HOẶC BẢNG XẾP HẠNG ---
+    function renderSummaryPanel() {
+      if (appState.mode === 'accumulate') {
+        renderLeaderboardSummary();
+      } else {
+        renderSettlementSummary();
+      }
+    }
+
     function renderSettlementSummary() {
       const container = document.getElementById('summarySettlementGrid');
       container.innerHTML = '';
 
       const totals = calculatePlayerTotals(false);
-      const rate = appState.mode === 'rate' ? appState.pointRate : 1;
-
       let debtors = [];
       let creditors = [];
 
       appState.players.forEach(p => {
-        const net = totals[p.id] * rate;
+        const net = totals[p.id];
         if (net < 0) debtors.push({ name: p.name, amount: Math.abs(net) });
         else if (net > 0) creditors.push({ name: p.name, amount: net });
       });
@@ -1609,19 +1718,76 @@
       lucide.createIcons();
     }
 
+    function renderLeaderboardSummary() {
+      const container = document.getElementById('summarySettlementGrid');
+      container.innerHTML = '';
+
+      const totals = calculatePlayerTotals(false);
+      const isEn = appState.lang === 'en';
+      const unit = isEn ? ' pts' : ' đ';
+
+      // Sắp xếp người chơi theo điểm giảm dần
+      const ranked = [...appState.players].map(p => ({
+        name: p.name,
+        score: totals[p.id] || 0
+      })).sort((a, b) => b.score - a.score);
+
+      if (appState.rounds.length === 0 && ranked.every(r => r.score === 0)) {
+        container.innerHTML = `<div class="col-span-full py-3 text-center text-xs text-slate-400 font-medium">${t('noLeaderboardData')}</div>`;
+        return;
+      }
+
+      const medals = ['🥇', '🥈', '🥉'];
+      const rankColors = [
+        'bg-amber-50 border-amber-300 text-amber-900', // Top 1: Vàng
+        'bg-slate-100 border-slate-300 text-slate-800',  // Top 2: Bạc
+        'bg-orange-50 border-orange-300 text-orange-900', // Top 3: Đồng
+        'bg-slate-50 border-slate-200 text-slate-700'    // Còn lại
+      ];
+
+      ranked.forEach((item, idx) => {
+        const medal = idx < 3 ? medals[idx] : `${idx + 1}`;
+        const rankLabel = isEn ? `#${idx + 1}` : `Hạng ${idx + 1}`;
+        const colorClass = rankColors[Math.min(idx, 3)];
+        const isTop1 = idx === 0 && item.score > 0;
+
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border flex items-center justify-between text-xs shadow-2xs ${colorClass}`;
+        card.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-base">${idx < 3 ? medal : `<span class="font-mono font-bold text-slate-500 w-5 text-center inline-block">${idx + 1}</span>`}</span>
+            <div>
+              <div class="font-bold flex items-center gap-1">
+                <span>${item.name}</span>
+                ${isTop1 ? '<span class="text-xs" title="Dẫn đầu">👑</span>' : ''}
+              </div>
+              <div class="text-[10px] text-slate-500 font-medium">${rankLabel}</div>
+            </div>
+          </div>
+          <div class="font-mono font-extrabold text-sm sm:text-base ${isTop1 ? 'text-amber-700' : 'text-slate-800'}">
+            ${item.score.toLocaleString(isEn ? 'en-US' : 'vi-VN')}${unit}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function copySummaryMessage() {
+      if (appState.mode === 'accumulate') {
+        copyLeaderboardMessage();
+      } else {
+        copySettlementMessage();
+      }
+    }
+
     function copySettlementMessage() {
       const totals = calculatePlayerTotals(false);
-      const rate = appState.mode === 'rate' ? appState.pointRate : 1;
-      const isEn = appState.lang === 'en';
-      const rateStr = appState.mode === 'rate' 
-        ? t('summaryRateLabel').replace('{rate}', appState.pointRate.toLocaleString(isEn ? 'en-US' : 'vi-VN'))
-        : '';
-
       let debtors = [];
       let creditors = [];
 
       appState.players.forEach(p => {
-        const net = totals[p.id] * rate;
+        const net = totals[p.id];
         if (net < 0) debtors.push({ name: p.name, amount: Math.abs(net) });
         else if (net > 0) creditors.push({ name: p.name, amount: net });
       });
@@ -1641,13 +1807,12 @@
         if (creditor.amount === 0) j++;
       }
 
-      let msg = `${t('summaryHeader').replace('{rounds}', appState.rounds.length)}${rateStr}\n`;
+      let msg = `${t('summaryHeader').replace('{rounds}', appState.rounds.length)}\n`;
       msg += `------------------------------------\n`;
       msg += `${t('summaryScores')}\n`;
       appState.players.forEach(p => {
         const sc = totals[p.id];
-        const mn = sc * rate;
-        msg += `• ${p.name}: ${formatNumber(sc)} ${appState.mode === 'rate' ? `(${formatCurrency(mn)})` : ''}\n`;
+        msg += `• ${p.name}: ${formatNumber(sc)}\n`;
       });
       msg += `------------------------------------\n`;
       msg += `${t('summaryTransfers')}\n`;
@@ -1663,7 +1828,39 @@
       }
 
       navigator.clipboard.writeText(msg).then(() => {
-        alert(t('copiedMsg'));
+        alert(t('copiedSettlementMsg'));
+      });
+    }
+
+    function copyLeaderboardMessage() {
+      const totals = calculatePlayerTotals(false);
+      const isEn = appState.lang === 'en';
+      const unit = isEn ? ' pts' : ' điểm';
+
+      const ranked = [...appState.players].map(p => ({
+        name: p.name,
+        score: totals[p.id] || 0
+      })).sort((a, b) => b.score - a.score);
+
+      const medals = ['🥇', '🥈', '🥉'];
+      let msg = `${t('leaderboardHeader').replace('{rounds}', appState.rounds.length)}\n`;
+      msg += `------------------------------------\n`;
+
+      ranked.forEach((item, idx) => {
+        const medal = idx < 3 ? medals[idx] : `${idx + 1}.`;
+        const rankLabel = `${idx + 1}`;
+        const crown = idx === 0 && item.score > 0 ? ' 👑' : '';
+        const line = isEn 
+          ? `${medal} #${rankLabel}: ${item.name} - ${item.score.toLocaleString('en-US')}${unit}${crown}`
+          : `${medal} Hạng ${rankLabel}: ${item.name} - ${item.score.toLocaleString('vi-VN')}${unit}${crown}`;
+        msg += `${line}\n`;
+      });
+
+      msg += `------------------------------------\n`;
+      msg += `🎰 Card Score Master`;
+
+      navigator.clipboard.writeText(msg).then(() => {
+        alert(t('copiedLeaderboardMsg'));
       });
     }
 
@@ -1733,6 +1930,7 @@
         activeDraftScores = {};
         saveState();
         updateLanguageUI();
+        updateModeUI();
         renderApp();
       }
     }
@@ -1741,7 +1939,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       updateLanguageUI();
       updateModeUI();
-      syncRate(appState.pointRate);
       renderApp();
     });
   </script>
