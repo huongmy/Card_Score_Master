@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <title>Sổ Tính Điểm Đánh Bài - Card Score Master</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
@@ -366,8 +366,8 @@
         0 ✓ Cân bằng
       </div>
 
-      <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (luôn nằm gọn gàng bên phải) -->
-      <button type="button" onclick="clearActiveDraft()" class="ml-auto text-xs text-slate-600 hover:text-rose-600 active:text-rose-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 active:bg-rose-100 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
+      <!-- Nút Nhập lại: Xóa các ô đang gõ dở để gõ lại (luôn nằm gọn gàng bên phải, không làm mất focus bàn phím) -->
+      <button type="button" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="clearActiveDraft()" class="ml-auto text-xs text-slate-600 hover:text-rose-600 active:text-rose-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 active:bg-rose-100 transition border border-slate-200 shadow-2xs" title="Xóa các ô điểm đang gõ dở để nhập lại">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400"></i>
         <span id="lblResetDraft">Nhập lại</span>
       </button>
@@ -378,8 +378,8 @@
       <!-- Rendered by JS -->
     </div>
 
-    <!-- Nút thao tác trên điện thoại -->
-    <div class="flex items-center gap-2">
+    <!-- Nút thao tác trên điện thoại (Sticky ở đáy Bottom Sheet để không bao giờ bị che) -->
+    <div class="flex items-center gap-2 pt-1 sticky bottom-0 bg-white">
       <button type="button" id="btnAutoBalanceMobile" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
         <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
         <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
@@ -832,6 +832,19 @@
       if (appState.rounds.length === 0) {
         renderHistoricalRounds();
       }
+
+      // Tự động focus lại vào ô người chơi đầu tiên để bàn phím ảo trên điện thoại KHÔNG bị đóng
+      const firstPlayer = appState.players[0];
+      if (firstPlayer) {
+        const isMobile = window.innerWidth < 1024;
+        const targetInp = isMobile
+          ? document.getElementById(`mobileInput_${firstPlayer.id}`)
+          : document.getElementById(`inputDraft_${firstPlayer.id}`);
+        if (targetInp) {
+          targetInp.focus();
+          setTimeout(() => targetInp.focus(), 60);
+        }
+      }
     }
 
     function formatNumber(val) {
@@ -1136,17 +1149,38 @@
     }
 
     // --- ĐIỀU KHIỂN BOTTOM SHEET NHẬP ĐIỂM TRÊN ĐIỆN THOẠI (OPTION 2) ---
+    // Tự động nâng Bottom Sheet lên trên bàn phím ảo để nút Lưu luôn thấy rõ, không bị che
+    function syncSheetPositionWithKeyboard() {
+      const padBox = document.getElementById('mobileQuickPadBox');
+      if (!padBox || padBox.classList.contains('translate-y-full')) return;
+
+      if (window.visualViewport) {
+        const keyboardHeight = Math.max(0, window.innerHeight - window.visualViewport.height);
+        padBox.style.bottom = `${keyboardHeight}px`;
+        padBox.style.maxHeight = `${Math.min(window.visualViewport.height - 10, 520)}px`;
+      }
+    }
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncSheetPositionWithKeyboard);
+      window.visualViewport.addEventListener('scroll', syncSheetPositionWithKeyboard);
+    }
+
     function openMobileInputSheet() {
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
       if (backdrop) backdrop.classList.remove('hidden');
       if (padBox) {
         padBox.classList.remove('translate-y-full');
+        syncSheetPositionWithKeyboard();
         lucide.createIcons();
         setTimeout(() => {
           const firstInput = padBox.querySelector('input');
-          if (firstInput) firstInput.focus();
-        }, 250);
+          if (firstInput) {
+            firstInput.focus();
+            syncSheetPositionWithKeyboard();
+          }
+        }, 200);
       }
     }
 
@@ -1154,7 +1188,11 @@
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
       if (backdrop) backdrop.classList.add('hidden');
-      if (padBox) padBox.classList.add('translate-y-full');
+      if (padBox) {
+        padBox.classList.add('translate-y-full');
+        padBox.style.bottom = '0px';
+        padBox.style.maxHeight = '';
+      }
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
       }
@@ -1323,7 +1361,9 @@
         div.className = 'bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs';
         div.innerHTML = `
           <span class="text-xs font-bold text-slate-700 truncate max-w-[85px]">${p.name}</span>
-          <input type="number" id="mobileInput_${p.id}" value="${val}" placeholder="0"
+          <input type="number" id="mobileInput_${p.id}" name="score_${p.id}" value="${val}" placeholder="0"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            data-form-type="other" data-lpignore="true" data-1p-ignore="true" inputmode="numeric"
             oninput="handleLiveInput('${p.id}', this, true)"
             onkeydown="handleDraftKeydown(event, ${idx})"
             class="w-20 bg-slate-50 text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:bg-white ${focusBorderClass} focus:outline-none ${colorClass}">
@@ -1365,7 +1405,9 @@
 
         html += `
           <div class="py-1.5 px-1 border-r-0 last:border-r-0 flex justify-center">
-            <input type="number" id="inputDraft_${p.id}" value="${val}" placeholder="0"
+            <input type="number" id="inputDraft_${p.id}" name="score_${p.id}" value="${val}" placeholder="0"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+              data-form-type="other" data-lpignore="true" data-1p-ignore="true" inputmode="numeric"
               oninput="handleLiveInput('${p.id}', this, false)"
               onkeydown="handleDraftKeydown(event, ${idx})"
               class="w-full max-w-[85px] bg-white text-center font-mono text-sm sm:text-base rounded-lg py-1 px-1 border-2 border-slate-300 ${draftFocusBorder} focus:outline-none shadow-2xs transition-colors ${colorClass}">
@@ -1588,19 +1630,34 @@
       saveState();
       renderApp();
 
-      // 4. Cuộn nhẹ xuống bảng điểm và làm nổi bật hàng vừa nhập thay vì tự động mở lại bàn phím
-      setTimeout(() => {
-        const newRow = document.getElementById(`historyRow_${nextRoundNo}`);
-        if (newRow) {
-          newRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          const isAcc = appState.mode === 'accumulate';
-          const flashBg = isAcc ? 'bg-indigo-100/80' : 'bg-emerald-100/80';
-          newRow.classList.add(flashBg);
-          setTimeout(() => {
-            newRow.classList.remove(flashBg);
-          }, 1200);
-        }
-      }, 100);
+      // 4. Tự động cuộn chính xác lên ván mới vừa nhập (kể cả khi bảng có 11, 20 hay nhiều ván)
+      function scrollToNewRound(roundNo) {
+        const newRow = document.getElementById(`historyRow_${roundNo}`);
+        if (!newRow) return;
+
+        const headerEl = document.querySelector('header');
+        const headerHeight = headerEl ? headerEl.offsetHeight : 60;
+        const rect = newRow.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        // Trừ đi khoảng cách header cố định và 2 hàng tổng + tên người chơi (~75px) để thấy trọn vẹn
+        const targetTop = rect.top + scrollTop - headerHeight - 80;
+
+        window.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: 'smooth'
+        });
+
+        const isAcc = appState.mode === 'accumulate';
+        const flashBg = isAcc ? 'bg-indigo-100/90' : 'bg-emerald-100/90';
+        newRow.classList.add(flashBg);
+        setTimeout(() => {
+          newRow.classList.remove(flashBg);
+        }, 1500);
+      }
+
+      // Kích hoạt cuộn ở 120ms và kích hoạt lại ở 360ms sau khi bàn phím ảo điện thoại đóng hoàn tất
+      setTimeout(() => scrollToNewRound(nextRoundNo), 120);
+      setTimeout(() => scrollToNewRound(nextRoundNo), 360);
     }
 
     // --- RENDER LỊCH SỬ CÁC VÁN ĐÃ ĐÁNH ---
@@ -1842,7 +1899,9 @@
         div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200';
         div.innerHTML = `
           <span class="text-xs font-bold text-slate-700 truncate max-w-[140px]">${p.name}</span>
-          <input type="number" id="editScore_${p.id}" value="${scoreVal}"
+          <input type="number" id="editScore_${p.id}" name="score_${p.id}" value="${scoreVal}"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            data-form-type="other" data-lpignore="true" data-1p-ignore="true" inputmode="numeric"
             oninput="handleEditModalInput(this)"
             class="w-24 bg-white text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 ${editFocusBorder} focus:outline-none shadow-2xs ${colorClass}">
         `;
