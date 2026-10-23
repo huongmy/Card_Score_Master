@@ -515,7 +515,7 @@
         editRoundTitle: "Sửa điểm ván #",
         deleteRoundTitle: "Xóa ván #",
         confirmDeleteRound: "Bạn có chắc muốn xóa ván số {round}?",
-        confirmReset: "Bạn có chắc muốn đặt lại toàn bộ bàn chơi về mặc định ban đầu không?",
+        confirmReset: "Bạn có chắc muốn đặt lại toàn bộ ván chơi của chế độ \"{mode}\" không? (Danh sách người chơi vẫn được giữ nguyên)",
         confirmUnbalancedSave: "Cảnh báo: Tổng điểm của ván này đang là {sum} (không bằng 0).\nBạn có muốn lưu không?",
         confirmEditUnbalancedSave: "Cảnh báo: Tổng điểm ván #{round} đang là {sum} (chưa bằng 0).\nBạn có chắc muốn lưu không?",
         deletePlayerConfirm: "Xóa người chơi này?",
@@ -586,7 +586,7 @@
         editRoundTitle: "Edit round #",
         deleteRoundTitle: "Delete round #",
         confirmDeleteRound: "Are you sure you want to delete round #{round}?",
-        confirmReset: "Are you sure you want to reset all game data to default?",
+        confirmReset: "Are you sure you want to reset all rounds for \"{mode}\" mode? (Player list will be preserved)",
         confirmUnbalancedSave: "Warning: Round total is {sum} (not zero).\nDo you want to save anyway?",
         confirmEditUnbalancedSave: "Warning: Round #{round} total is {sum} (not zero).\nDo you want to save anyway?",
         deletePlayerConfirm: "Remove this player?",
@@ -614,7 +614,11 @@
         { id: 'p3', name: 'Bạn C' },
         { id: 'p4', name: 'Bạn D' }
       ],
-      rounds: [] // Khởi đầu sạch sẽ, bắt đầu từ Ván #1
+      roundsByMode: {
+        zero_sum: [],
+        accumulate: []
+      },
+      rounds: [] // Luôn trỏ tới roundsByMode của mode hiện tại
     };
 
     let appState = loadState();
@@ -632,16 +636,6 @@
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.rounds && Array.isArray(parsed.rounds)) {
-            parsed.rounds = parsed.rounds.filter(r => {
-              const vals = Object.values(r.scores || {});
-              return vals.length > 0 && vals.some(sc => Number(sc) !== 0);
-            });
-            parsed.rounds.sort((a, b) => a.roundNo - b.roundNo);
-            parsed.rounds.forEach((r, idx) => r.roundNo = idx + 1);
-          } else {
-            parsed.rounds = [];
-          }
           if (parsed.showTotalRow === undefined) parsed.showTotalRow = true;
           if (!parsed.lang) parsed.lang = 'vi';
 
@@ -654,15 +648,62 @@
             parsed.mode = 'zero_sum';
           }
 
+          // Khởi tạo và tách biệt roundsByMode cho 2 chế độ độc lập
+          if (!parsed.roundsByMode) {
+            parsed.roundsByMode = { zero_sum: [], accumulate: [] };
+            if (parsed.rounds && Array.isArray(parsed.rounds)) {
+              const cleanedRounds = parsed.rounds.filter(r => {
+                const vals = Object.values(r.scores || {});
+                return vals.length > 0 && vals.some(sc => Number(sc) !== 0);
+              });
+              cleanedRounds.sort((a, b) => a.roundNo - b.roundNo);
+              cleanedRounds.forEach((r, idx) => r.roundNo = idx + 1);
+
+              // Tự động nhận diện dữ liệu: nếu ván có tổng != 0 thì chuyển vào accumulate
+              const hasNonZeroSum = cleanedRounds.some(r => {
+                const s = Object.values(r.scores || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                return s !== 0;
+              });
+
+              if (hasNonZeroSum || parsed.mode === 'accumulate') {
+                parsed.roundsByMode.accumulate = cleanedRounds;
+                parsed.roundsByMode.zero_sum = [];
+              } else {
+                parsed.roundsByMode.zero_sum = cleanedRounds;
+                parsed.roundsByMode.accumulate = [];
+              }
+            }
+          } else {
+            if (!Array.isArray(parsed.roundsByMode.zero_sum)) parsed.roundsByMode.zero_sum = [];
+            if (!Array.isArray(parsed.roundsByMode.accumulate)) parsed.roundsByMode.accumulate = [];
+
+            ['zero_sum', 'accumulate'].forEach(m => {
+              parsed.roundsByMode[m] = parsed.roundsByMode[m].filter(r => {
+                const vals = Object.values(r.scores || {});
+                return vals.length > 0 && vals.some(sc => Number(sc) !== 0);
+              });
+              parsed.roundsByMode[m].sort((a, b) => a.roundNo - b.roundNo);
+              parsed.roundsByMode[m].forEach((r, idx) => r.roundNo = idx + 1);
+            });
+          }
+
+          // Gán con trỏ rounds vào đúng mảng của mode hiện tại
+          parsed.rounds = parsed.roundsByMode[parsed.mode] || [];
           return parsed;
         }
       } catch (e) {
         console.error("Lỗi đọc storage", e);
       }
-      return JSON.parse(JSON.stringify(defaultState));
+      const fresh = JSON.parse(JSON.stringify(defaultState));
+      fresh.rounds = fresh.roundsByMode[fresh.mode];
+      return fresh;
     }
 
     function saveState() {
+      if (!appState.roundsByMode) {
+        appState.roundsByMode = { zero_sum: [], accumulate: [] };
+      }
+      appState.roundsByMode[appState.mode] = appState.rounds || [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     }
 
@@ -783,10 +824,30 @@
 
     // --- CHUYỂN ĐỔI CHẾ ĐỘ TÍNH ---
     function setCalculationMode(mode) {
+      if (appState.mode === mode) return;
+
+      // 1. Lưu lại các ván của mode hiện tại trước khi chuyển
+      if (!appState.roundsByMode) {
+        appState.roundsByMode = { zero_sum: [], accumulate: [] };
+      }
+      appState.roundsByMode[appState.mode] = appState.rounds || [];
+
+      // 2. Chuyển sang mode mới
       appState.mode = mode;
+
+      // 3. Nạp danh sách ván tương ứng của mode mới
+      if (!appState.roundsByMode[mode]) {
+        appState.roundsByMode[mode] = [];
+      }
+      appState.rounds = appState.roundsByMode[mode];
+
+      // 4. Xóa các ô điểm đang gõ dở để tránh nhầm số điểm giữa 2 chế độ
+      activeDraftScores = {};
+
       saveState();
       updateModeUI();
       renderApp();
+
       const panel = document.getElementById('summaryAccordion');
       if (panel && !panel.classList.contains('hidden')) {
         renderSummaryPanel();
@@ -1305,6 +1366,9 @@
       const nextRoundNo = maxNo + 1;
 
       appState.rounds.push({ roundNo: nextRoundNo, scores });
+      if (appState.roundsByMode) {
+        appState.roundsByMode[appState.mode] = appState.rounds;
+      }
       activeDraftScores = {};
       saveState();
       renderApp();
@@ -1487,6 +1551,9 @@
         appState.rounds = appState.rounds.filter(r => r.roundNo !== roundNo);
         appState.rounds.sort((a, b) => a.roundNo - b.roundNo);
         appState.rounds.forEach((r, idx) => r.roundNo = idx + 1);
+        if (appState.roundsByMode) {
+          appState.roundsByMode[appState.mode] = appState.rounds;
+        }
         saveState();
         renderApp();
       }
@@ -1640,6 +1707,9 @@
       }
 
       round.scores = newScores;
+      if (appState.roundsByMode) {
+        appState.roundsByMode[appState.mode] = appState.rounds;
+      }
       saveState();
       closeEditRoundModal();
       renderApp();
@@ -1906,7 +1976,16 @@
     function removePlayer(playerId) {
       if (confirm(t('deletePlayerConfirm'))) {
         appState.players = appState.players.filter(p => p.id !== playerId);
+        if (appState.roundsByMode) {
+          ['zero_sum', 'accumulate'].forEach(m => {
+            (appState.roundsByMode[m] || []).forEach(r => {
+              if (r.scores) delete r.scores[playerId];
+            });
+          });
+        }
+        saveState();
         openPlayerModal();
+        renderApp();
       }
     }
 
@@ -1923,15 +2002,21 @@
     }
 
     function resetDataPrompt() {
-      if (confirm(t('confirmReset'))) {
-        const curLang = appState.lang || 'vi';
-        appState = JSON.parse(JSON.stringify(defaultState));
-        appState.lang = curLang;
+      const modeName = appState.mode === 'zero_sum' ? t('modeZeroSum') : t('modeAccumulate');
+      const confirmMsg = t('confirmReset').replace('{mode}', modeName);
+      if (confirm(confirmMsg)) {
+        if (!appState.roundsByMode) {
+          appState.roundsByMode = { zero_sum: [], accumulate: [] };
+        }
+        appState.roundsByMode[appState.mode] = [];
+        appState.rounds = [];
         activeDraftScores = {};
         saveState();
-        updateLanguageUI();
-        updateModeUI();
         renderApp();
+        const panel = document.getElementById('summaryAccordion');
+        if (panel && !panel.classList.contains('hidden')) {
+          renderSummaryPanel();
+        }
       }
     }
 
