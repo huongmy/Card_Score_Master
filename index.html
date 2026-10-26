@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sổ Tính Điểm Đánh Bài - Card Score Master</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
@@ -44,11 +44,33 @@
     }
   </script>
   <style>
+    *, *::before, *::after {
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-focus-ring-color: transparent !important;
+    }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: #F8FAFC; /* slate-50 */
       color: #0F172A; /* slate-900 */
       -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+    /* Ngăn zoom và nháy màn hình khi tap vào ô nhập liệu trên điện thoại */
+    input, button, select, textarea {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    input[type="number"], input[type="text"] {
+      font-size: 16px !important; /* Chuẩn 16px để iOS Safari không bao giờ tự động zoom gây nháy màn hình */
+    }
+    /* Ẩn mũi tên tăng giảm số mặc định trên input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
     }
     /* Scrollbar */
     ::-webkit-scrollbar {
@@ -848,7 +870,7 @@
           ? document.getElementById(`mobileInput_${firstPlayer.id}`)
           : document.getElementById(`inputDraft_${firstPlayer.id}`);
         if (targetInp) {
-          targetInp.focus();
+          targetInp.focus({ preventScroll: true });
         }
       }
     }
@@ -1164,7 +1186,7 @@
         // Kích hoạt focus ngay tức thì trong luồng chạm để bàn phím bật lên đồng bộ, không bị khựng
         const firstInput = padBox.querySelector('input');
         if (firstInput) {
-          firstInput.focus();
+          firstInput.focus({ preventScroll: true });
         }
       }
     }
@@ -1341,7 +1363,7 @@
         if (val !== '' && numVal < 0) colorClass = 'color-negative';
 
         const div = document.createElement('div');
-        div.className = 'bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs';
+        div.className = 'bg-slate-50 p-2 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs';
         div.innerHTML = `
           <span class="text-xs font-bold text-slate-700 truncate max-w-[85px]">${p.name}</span>
           <input type="number" id="mobileInput_${p.id}" name="score_${p.id}" value="${val}" placeholder="0"
@@ -1349,7 +1371,7 @@
             data-form-type="other" data-lpignore="true" data-1p-ignore="true" inputmode="numeric"
             oninput="handleLiveInput('${p.id}', this, true)"
             onkeydown="handleDraftKeydown(event, ${idx})"
-            class="w-20 bg-slate-50 text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 focus:bg-white ${focusBorderClass} focus:outline-none ${colorClass}">
+            class="w-20 bg-white text-center font-mono text-base font-bold rounded-lg py-1 px-1 border border-slate-300 ${focusBorderClass} focus:outline-none ${colorClass}">
         `;
         grid.appendChild(div);
       });
