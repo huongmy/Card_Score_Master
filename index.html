@@ -411,6 +411,8 @@
         <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
       </button>
     </div>
+    <!-- Chân che đáy để khi trồi lên trên bàn phím ảo luôn liền khối và phẳng phiu -->
+    <div class="absolute top-full inset-x-0 h-screen bg-white pointer-events-none"></div>
   </div>
 
   <!-- MODAL: CÀI ĐẶT NGƯỜI CHƠI -->
@@ -870,7 +872,7 @@
           ? document.getElementById(`mobileInput_${firstPlayer.id}`)
           : document.getElementById(`inputDraft_${firstPlayer.id}`);
         if (targetInp) {
-          targetInp.focus({ preventScroll: true });
+          targetInp.focus();
         }
       }
     }
@@ -1177,17 +1179,47 @@
     }
 
     // --- ĐIỀU KHIỂN BOTTOM SHEET NHẬP ĐIỂM TRÊN ĐIỆN THOẠI (OPTION 2) ---
+    // Tự động nâng khung nhập điểm lướt mượt mà lên trên bàn phím ảo, không bao giờ bị bàn phím che
+    function updateSheetKeyboardPosition() {
+      const padBox = document.getElementById('mobileQuickPadBox');
+      if (!padBox || padBox.classList.contains('translate-y-full')) return;
+
+      if (window.visualViewport) {
+        const offsetTop = window.visualViewport.offsetTop || 0;
+        const visibleHeight = window.visualViewport.height;
+        const totalHeight = window.innerHeight;
+        // Chiều cao bị bàn phím ảo che khuất ở đáy màn hình
+        const obscuredBottom = Math.max(0, totalHeight - (visibleHeight + offsetTop));
+
+        if (obscuredBottom > 50) {
+          // Bàn phím ảo mở: Tự động trồi khung nhập điểm lên trên bàn phím
+          padBox.style.transform = `translateY(-${obscuredBottom}px)`;
+        } else {
+          // Bàn phím ảo đóng: Trở về vị trí đáy
+          padBox.style.transform = 'translateY(0)';
+        }
+      }
+    }
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateSheetKeyboardPosition);
+    }
+
     function openMobileInputSheet() {
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
       if (backdrop) backdrop.classList.remove('hidden');
       if (padBox) {
         padBox.classList.remove('translate-y-full');
-        // Kích hoạt focus ngay tức thì trong luồng chạm để bàn phím bật lên đồng bộ, không bị khựng
+        padBox.style.transform = 'translateY(0)';
+
+        // Kích hoạt focus ô đầu tiên để mở bàn phím
         const firstInput = padBox.querySelector('input');
         if (firstInput) {
-          firstInput.focus({ preventScroll: true });
+          firstInput.focus();
         }
+        setTimeout(updateSheetKeyboardPosition, 60);
+        setTimeout(updateSheetKeyboardPosition, 250);
       }
     }
 
@@ -1197,10 +1229,23 @@
       if (backdrop) backdrop.classList.add('hidden');
       if (padBox) {
         padBox.classList.add('translate-y-full');
+        padBox.style.transform = '';
       }
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
       }
+    }
+
+    // Lắng nghe sự kiện chuyển ô nhập liệu để khung nhập luôn bám sát trên bàn phím
+    const padBoxElem = document.getElementById('mobileQuickPadBox');
+    if (padBoxElem) {
+      padBoxElem.addEventListener('focusin', () => {
+        setTimeout(updateSheetKeyboardPosition, 50);
+        setTimeout(updateSheetKeyboardPosition, 200);
+      });
+      padBoxElem.addEventListener('focusout', () => {
+        setTimeout(updateSheetKeyboardPosition, 100);
+      });
     }
 
     function updateMobileBottomDock() {
