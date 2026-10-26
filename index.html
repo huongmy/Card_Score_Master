@@ -360,7 +360,7 @@
   <!-- ================= BACKDROP & KHU VỰC NHẬP NHANH DẠNG SLIDE-UP BOTTOM SHEET TRÊN ĐIỆN THOẠI ================= -->
   <div id="mobileSheetBackdrop" onclick="closeMobileInputSheet()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden transition-opacity duration-300"></div>
 
-  <div id="mobileQuickPadBox" class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 border-emerald-300 p-4 shadow-2xl space-y-3 transform translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto block lg:hidden">
+  <div id="mobileQuickPadBox" class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 border-emerald-300 p-4 shadow-2xl space-y-3 transform translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto overscroll-contain block lg:hidden">
     <!-- Thanh kéo Drag Handle -->
     <div class="flex justify-center -mt-1 mb-1">
       <div class="w-12 h-1.5 rounded-full bg-slate-300"></div>
@@ -402,7 +402,10 @@
 
     <!-- Nút thao tác trên điện thoại (Sticky ở đáy Bottom Sheet để không bao giờ bị che) -->
     <div class="flex items-center gap-2 pt-1 sticky bottom-0 bg-white">
-      <button type="button" id="btnAutoBalanceMobile" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+      <button type="button" id="btnAutoBalanceMobile" onmousedown="event.preventDefault()" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+        <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
+        <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
+      </button>
         <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
         <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
       </button>
@@ -872,7 +875,7 @@
           ? document.getElementById(`mobileInput_${firstPlayer.id}`)
           : document.getElementById(`inputDraft_${firstPlayer.id}`);
         if (targetInp) {
-          targetInp.focus();
+          targetInp.focus({ preventScroll: true });
         }
       }
     }
@@ -1031,7 +1034,7 @@
         const isOpen = !quickPadBox.classList.contains('translate-y-full');
         const translateClass = isOpen ? '' : 'translate-y-full';
         const borderClass = isZeroSum ? 'border-emerald-300' : 'border-indigo-300';
-        quickPadBox.className = `fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 ${borderClass} p-4 shadow-2xl space-y-3 transform ${translateClass} transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto block lg:hidden`;
+        quickPadBox.className = `fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t-2 ${borderClass} p-4 shadow-2xl space-y-3 transform ${translateClass} transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto overscroll-contain block lg:hidden`;
       }
       if (mobileRoundBadge) {
         mobileRoundBadge.className = isZeroSum
@@ -1180,23 +1183,46 @@
 
     // --- ĐIỀU KHIỂN BOTTOM SHEET NHẬP ĐIỂM TRÊN ĐIỆN THOẠI (OPTION 2) ---
     // Tự động nâng khung nhập điểm lướt mượt mà lên trên bàn phím ảo, không bao giờ bị bàn phím che
+    let currentKbShift = 0;
+    let savedScrollY = 0;
+
+    // Khóa cuộn trang nền triệt để trên cả iOS Safari & Android Chrome khi mở Bottom Sheet
+    function lockBodyScroll() {
+      savedScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${savedScrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function unlockBodyScroll() {
+      if (document.body.style.position === 'fixed') {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, savedScrollY);
+      }
+    }
+
     function updateSheetKeyboardPosition() {
       const padBox = document.getElementById('mobileQuickPadBox');
       if (!padBox || padBox.classList.contains('translate-y-full')) return;
 
       if (window.visualViewport) {
-        const offsetTop = window.visualViewport.offsetTop || 0;
-        const visibleHeight = window.visualViewport.height;
-        const totalHeight = window.innerHeight;
-        // Chiều cao bị bàn phím ảo che khuất ở đáy màn hình
-        const obscuredBottom = Math.max(0, totalHeight - (visibleHeight + offsetTop));
+        const rawKbHeight = window.innerHeight - window.visualViewport.height;
+        // Bàn phím ảo trên mobile thường cao > 100px
+        const kbHeight = rawKbHeight > 100 ? Math.round(rawKbHeight) : 0;
 
-        if (obscuredBottom > 50) {
-          // Bàn phím ảo mở: Tự động trồi khung nhập điểm lên trên bàn phím
-          padBox.style.transform = `translateY(-${obscuredBottom}px)`;
-        } else {
-          // Bàn phím ảo đóng: Trở về vị trí đáy
-          padBox.style.transform = 'translateY(0)';
+        // Chỉ thay đổi vị trí khi bàn phím thực sự mở/đóng hoặc thay đổi đáng kể (> 8px)
+        // Loại bỏ hoàn toàn hiện tượng rung giật / nhảy lên một tí khi click chuyển qua lại giữa các ô input
+        if (Math.abs(currentKbShift - kbHeight) > 8) {
+          currentKbShift = kbHeight;
+          if (kbHeight > 0) {
+            padBox.style.transform = `translateY(-${kbHeight}px)`;
+          } else {
+            padBox.style.transform = 'translateY(0)';
+          }
         }
       }
     }
@@ -1208,15 +1234,18 @@
     function openMobileInputSheet() {
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
+      currentKbShift = 0;
+      lockBodyScroll();
+
       if (backdrop) backdrop.classList.remove('hidden');
       if (padBox) {
         padBox.classList.remove('translate-y-full');
         padBox.style.transform = 'translateY(0)';
 
-        // Kích hoạt focus ô đầu tiên để mở bàn phím
+        // Kích hoạt focus ô đầu tiên để mở bàn phím mà không gây cuộn trang ngầm
         const firstInput = padBox.querySelector('input');
         if (firstInput) {
-          firstInput.focus();
+          firstInput.focus({ preventScroll: true });
         }
         setTimeout(updateSheetKeyboardPosition, 60);
         setTimeout(updateSheetKeyboardPosition, 250);
@@ -1226,6 +1255,9 @@
     function closeMobileInputSheet() {
       const backdrop = document.getElementById('mobileSheetBackdrop');
       const padBox = document.getElementById('mobileQuickPadBox');
+      currentKbShift = 0;
+      unlockBodyScroll();
+
       if (backdrop) backdrop.classList.add('hidden');
       if (padBox) {
         padBox.classList.add('translate-y-full');
@@ -1234,18 +1266,6 @@
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
       }
-    }
-
-    // Lắng nghe sự kiện chuyển ô nhập liệu để khung nhập luôn bám sát trên bàn phím
-    const padBoxElem = document.getElementById('mobileQuickPadBox');
-    if (padBoxElem) {
-      padBoxElem.addEventListener('focusin', () => {
-        setTimeout(updateSheetKeyboardPosition, 50);
-        setTimeout(updateSheetKeyboardPosition, 200);
-      });
-      padBoxElem.addEventListener('focusout', () => {
-        setTimeout(updateSheetKeyboardPosition, 100);
-      });
     }
 
     function updateMobileBottomDock() {
@@ -1608,15 +1628,19 @@
         const needed = -currentSum;
         activeDraftScores[emptyPlayer.id] = needed;
 
+        const isMobile = window.innerWidth < 1024;
         const inputTable = document.getElementById(`inputDraft_${emptyPlayer.id}`);
         if (inputTable) {
           inputTable.value = needed;
           handleLiveInput(emptyPlayer.id, inputTable, false);
+          if (!isMobile) inputTable.focus({ preventScroll: true });
         }
         const inputMobile = document.getElementById(`mobileInput_${emptyPlayer.id}`);
         if (inputMobile) {
           inputMobile.value = needed;
           handleLiveInput(emptyPlayer.id, inputMobile, true);
+          // Giữ bàn phím ảo luôn mở bằng cách focus vào ô vừa được cân (để user xem và có thể sửa tiếp)
+          if (isMobile) inputMobile.focus({ preventScroll: true });
         }
       }
     }
@@ -1628,8 +1652,12 @@
           commitActiveRound();
         } else {
           const nextPlayer = appState.players[currentIdx + 1];
-          document.getElementById(`inputDraft_${nextPlayer.id}`)?.focus();
-          document.getElementById(`mobileInput_${nextPlayer.id}`)?.focus();
+          const isMobileSheet = event.target && event.target.id && event.target.id.startsWith('mobileInput_');
+          if (isMobileSheet) {
+            document.getElementById(`mobileInput_${nextPlayer.id}`)?.focus({ preventScroll: true });
+          } else {
+            document.getElementById(`inputDraft_${nextPlayer.id}`)?.focus({ preventScroll: true });
+          }
         }
       }
     }
@@ -1650,8 +1678,12 @@
 
       if (!hasAnyNonZero) {
         alert(t('alertAllZero'));
-        document.getElementById(`inputDraft_${appState.players[0].id}`)?.focus();
-        document.getElementById(`mobileInput_${appState.players[0].id}`)?.focus();
+        const isMobile = window.innerWidth < 1024;
+        if (isMobile) {
+          document.getElementById(`mobileInput_${appState.players[0].id}`)?.focus({ preventScroll: true });
+        } else {
+          document.getElementById(`inputDraft_${appState.players[0].id}`)?.focus({ preventScroll: true });
+        }
         return;
       }
 
@@ -2027,6 +2059,7 @@
         const targetInput = document.getElementById(`editScore_${emptyPlayer.id}`);
         targetInput.value = needed;
         handleEditModalInput(targetInput);
+        targetInput.focus({ preventScroll: true });
       }
     }
 
