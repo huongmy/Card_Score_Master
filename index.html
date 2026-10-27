@@ -301,8 +301,8 @@
               </th>
             </tr>
 
-            <!-- HÀNG 3 CỦA EXCEL: TÊN NGƯỜI CHƠI (BẤM VÀO SỬA TÊN TRỰC TIẾP) -->
-            <tr id="playerNamesHeaderRow" class="bg-slate-50/70 border-b border-slate-200 text-xs font-bold text-slate-700">
+            <!-- HÀNG TIÊU ĐỀ: VÁN, ĐIỂM, TÊN NGƯỜI CHƠI (NỀN DỊU MẮT, BẤM VÀO SỬA TÊN) -->
+            <tr id="playerNamesHeaderRow" class="bg-emerald-50/90 border-b-2 border-emerald-200/90 text-xs font-bold text-slate-800 select-none">
               <!-- Rendered by JS -->
             </tr>
 
@@ -581,6 +581,7 @@
         mobileInputTitle: "Nhập điểm ván mới",
         openMobileSheetBtn: "Ghi Điểm Ván Mới (#{round})",
         closeSheetBtn: "Đóng",
+        tapToEditPlayer: "Bấm để đổi tên trong danh sách thành viên",
         tapToEditRound: "Bấm giữ để sửa hoặc xóa ván #{round}",
         deleteRoundModalBtn: "Xóa ván này",
         legendHoldToEdit: "💡 Bấm giữ vào ván để sửa hoặc xóa",
@@ -661,6 +662,7 @@
         mobileInputTitle: "Enter round score",
         openMobileSheetBtn: "Enter Round #{round} Score",
         closeSheetBtn: "Close",
+        tapToEditPlayer: "Tap to edit names in members list",
         tapToEditRound: "Press & hold to edit or delete round #{round}",
         deleteRoundModalBtn: "Delete round",
         legendHoldToEdit: "💡 Press & hold any round to edit or delete",
@@ -718,10 +720,35 @@
       }
     };
 
+    function getDefaultPlayers(lang) {
+      const curLang = lang || (typeof appState !== 'undefined' && appState && appState.lang) || 'vi';
+      const prefix = curLang === 'en' ? 'Player ' : 'Bạn ';
+      return [
+        { id: 'p1', name: `${prefix}A` },
+        { id: 'p2', name: `${prefix}B` },
+        { id: 'p3', name: `${prefix}C` },
+        { id: 'p4', name: `${prefix}D` }
+      ];
+    }
+
     const defaultState = {
       lang: 'vi',
       mode: 'zero_sum', // 'zero_sum' (Ăn thua bù trừ) hoặc 'accumulate' (Cộng dồn đua điểm)
       showTotalRow: true,
+      playersByMode: {
+        zero_sum: [
+          { id: 'p1', name: 'Bạn A' },
+          { id: 'p2', name: 'Bạn B' },
+          { id: 'p3', name: 'Bạn C' },
+          { id: 'p4', name: 'Bạn D' }
+        ],
+        accumulate: [
+          { id: 'p1', name: 'Bạn A' },
+          { id: 'p2', name: 'Bạn B' },
+          { id: 'p3', name: 'Bạn C' },
+          { id: 'p4', name: 'Bạn D' }
+        ]
+      },
       players: [
         { id: 'p1', name: 'Bạn A' },
         { id: 'p2', name: 'Bạn B' },
@@ -801,19 +828,41 @@
             });
           }
 
-          // Gán con trỏ rounds vào đúng mảng của mode hiện tại
-          parsed.rounds = parsed.roundsByMode[parsed.mode] || [];
+          // Khởi tạo và tách biệt playersByMode cho 2 chế độ độc lập
+          if (!parsed.playersByMode) {
+            parsed.playersByMode = {
+              zero_sum: JSON.parse(JSON.stringify(parsed.players || defaultState.players)),
+              accumulate: JSON.parse(JSON.stringify(parsed.players || defaultState.players))
+            };
+          } else {
+            if (!Array.isArray(parsed.playersByMode.zero_sum) || parsed.playersByMode.zero_sum.length === 0) {
+              parsed.playersByMode.zero_sum = JSON.parse(JSON.stringify(parsed.players || defaultState.players));
+            }
+            if (!Array.isArray(parsed.playersByMode.accumulate) || parsed.playersByMode.accumulate.length === 0) {
+              parsed.playersByMode.accumulate = JSON.parse(JSON.stringify(parsed.players || defaultState.players));
+            }
+          }
 
-          // Đồng bộ tên mặc định của người chơi theo ngôn ngữ đã lưu
-          if (Array.isArray(parsed.players)) {
-            const targetPrefix = parsed.lang === 'en' ? 'Player ' : 'Bạn ';
-            parsed.players.forEach(p => {
+          // Gán con trỏ rounds & players vào đúng mảng của mode hiện tại
+          parsed.rounds = parsed.roundsByMode[parsed.mode] || [];
+          parsed.players = parsed.playersByMode[parsed.mode] || parsed.playersByMode.zero_sum;
+
+          // Đồng bộ tên mặc định của người chơi theo ngôn ngữ đã lưu cho cả 2 mode
+          const targetPrefix = parsed.lang === 'en' ? 'Player ' : 'Bạn ';
+          const syncList = (list) => {
+            if (!Array.isArray(list)) return;
+            list.forEach(p => {
               if (!p || !p.name) return;
               const match = p.name.trim().match(/^(?:Bạn|Player)\s+([A-Za-z]|[0-9]+)$/i);
               if (match) {
                 p.name = `${targetPrefix}${match[1].toUpperCase()}`;
               }
             });
+          };
+          syncList(parsed.players);
+          if (parsed.playersByMode) {
+            syncList(parsed.playersByMode.zero_sum);
+            syncList(parsed.playersByMode.accumulate);
           }
 
           return parsed;
@@ -823,6 +872,7 @@
       }
       const fresh = JSON.parse(JSON.stringify(defaultState));
       fresh.rounds = fresh.roundsByMode[fresh.mode];
+      fresh.players = fresh.playersByMode[fresh.mode];
       return fresh;
     }
 
@@ -831,20 +881,32 @@
         appState.roundsByMode = { zero_sum: [], accumulate: [] };
       }
       appState.roundsByMode[appState.mode] = appState.rounds || [];
+      if (!appState.playersByMode) {
+        appState.playersByMode = { zero_sum: [], accumulate: [] };
+      }
+      appState.playersByMode[appState.mode] = appState.players || [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     }
 
     // --- ĐỒNG BỘ TÊN MẶC ĐỊNH CỦA NGƯỜI CHƠI THEO NGÔN NGỮ (BẠN X <-> PLAYER X) ---
     function syncPlayerNamesWithLanguage(lang) {
-      if (!appState || !Array.isArray(appState.players)) return;
+      if (!appState) return;
       const targetPrefix = lang === 'en' ? 'Player ' : 'Bạn ';
-      appState.players.forEach(p => {
-        if (!p || !p.name) return;
-        const match = p.name.trim().match(/^(?:Bạn|Player)\s+([A-Za-z]|[0-9]+)$/i);
-        if (match) {
-          p.name = `${targetPrefix}${match[1].toUpperCase()}`;
-        }
-      });
+      const syncList = (list) => {
+        if (!Array.isArray(list)) return;
+        list.forEach(p => {
+          if (!p || !p.name) return;
+          const match = p.name.trim().match(/^(?:Bạn|Player)\s+([A-Za-z]|[0-9]+)$/i);
+          if (match) {
+            p.name = `${targetPrefix}${match[1].toUpperCase()}`;
+          }
+        });
+      };
+      syncList(appState.players);
+      if (appState.playersByMode) {
+        syncList(appState.playersByMode.zero_sum);
+        syncList(appState.playersByMode.accumulate);
+      }
     }
 
     // --- CHUYỂN ĐỔI NGÔN NGỮ (VI / EN) ---
@@ -993,11 +1055,16 @@
     function setCalculationMode(mode) {
       if (appState.mode === mode) return;
 
-      // 1. Lưu lại các ván của mode hiện tại trước khi chuyển
+      // 1. Lưu lại các ván và người chơi của mode hiện tại trước khi chuyển
       if (!appState.roundsByMode) {
         appState.roundsByMode = { zero_sum: [], accumulate: [] };
       }
       appState.roundsByMode[appState.mode] = appState.rounds || [];
+
+      if (!appState.playersByMode) {
+        appState.playersByMode = { zero_sum: [], accumulate: [] };
+      }
+      appState.playersByMode[appState.mode] = appState.players || [];
 
       // 2. Chuyển sang mode mới
       appState.mode = mode;
@@ -1008,7 +1075,13 @@
       }
       appState.rounds = appState.roundsByMode[mode];
 
-      // 4. Xóa các ô điểm đang gõ dở để tránh nhầm số điểm giữa 2 chế độ
+      // 4. Nạp danh sách người chơi độc lập tương ứng của mode mới
+      if (!appState.playersByMode[mode] || !Array.isArray(appState.playersByMode[mode]) || appState.playersByMode[mode].length === 0) {
+        appState.playersByMode[mode] = getDefaultPlayers(appState.lang);
+      }
+      appState.players = appState.playersByMode[mode];
+
+      // 5. Xóa các ô điểm đang gõ dở để tránh nhầm số điểm giữa 2 chế độ
       activeDraftScores = {};
 
       saveState();
@@ -1473,38 +1546,38 @@
       totalsCellsHtml += `</div>`;
       thTotalsRow.innerHTML = totalsCellsHtml;
 
-      // 2. TẠO HÀNG 3: VÁN, TỔNG / ĐIỂM, TÊN NGƯỜI CHƠI
-      playerNamesRow.className = 'bg-slate-50/70 border-b border-slate-200 text-xs font-bold text-slate-700';
+      // 2. TẠO HÀNG TIÊU ĐỀ CỘT: VÁN, TỔNG / ĐIỂM, TÊN NGƯỜI CHƠI (NỀN DỊU MẮT THEO CHỦ ĐỀ, CHỮ ĐẬM RÕ NÉT, BỎ KHUNG EDIT TÊN)
+      const headerThemeBg = isAccumulate 
+        ? 'bg-indigo-50/90 border-b-2 border-indigo-200/90 text-slate-800' 
+        : 'bg-emerald-50/90 border-b-2 border-emerald-200/90 text-slate-800';
+      playerNamesRow.className = `${headerThemeBg} text-xs font-bold select-none`;
 
       const colBTitle = isAccumulate ? (appState.lang === 'en' ? 'Pts' : 'Điểm') : t('colTotal');
+      const colLabelColor = isAccumulate ? 'text-indigo-900/80' : 'text-emerald-900/80';
+      const playerNameColor = isAccumulate ? 'text-indigo-950' : 'text-emerald-950';
 
       let namesRowHtml = `
-        <th class="py-2 px-1 w-10 sm:w-12 text-center font-bold text-slate-700 text-xs border-r-0">
+        <th class="py-2.5 px-1 w-10 sm:w-12 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
           ${t('colRound')}
         </th>
-        <th class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center font-bold text-slate-700 text-xs border-r-0">
+        <th class="py-2.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
           ${colBTitle}
         </th>
       `;
 
-      const nameHoverFocus = isAccumulate
-        ? 'hover:border-indigo-500 focus:border-indigo-500'
-        : 'hover:border-emerald-500 focus:border-emerald-500';
-
       appState.players.forEach((p, idx) => {
         namesRowHtml += `
-          <th class="py-1.5 px-0.5 sm:px-1 text-center border-r-0">
-            <div class="relative group">
-              <input type="text" value="${p.name}" 
-                onchange="updatePlayerNameInline('${p.id}', this.value)"
-                title="Bấm vào để đổi tên"
-                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-0.5 sm:px-1 border border-slate-200/80 ${nameHoverFocus} transition shadow-2xs">
+          <th class="py-2.5 px-0.5 sm:px-1 text-center border-r-0">
+            <div onclick="openPlayerModal()" class="cursor-pointer hover:opacity-75 active:scale-95 transition" title="${t('tapToEditPlayer')}">
+              <span class="block truncate font-extrabold text-xs sm:text-sm ${playerNameColor} px-0.5 tracking-tight">
+                ${p.name}
+              </span>
             </div>
           </th>
         `;
       });
 
-      namesRowHtml += `<th class="hidden lg:table-cell py-2 px-2 w-16 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
+      namesRowHtml += `<th class="hidden lg:table-cell py-2.5 px-2 w-16 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
       playerNamesRow.innerHTML = namesRowHtml;
     }
 
@@ -1512,6 +1585,10 @@
       const p = appState.players.find(x => x.id === playerId);
       if (p) {
         p.name = newName.trim() || p.name;
+        if (!appState.playersByMode) {
+          appState.playersByMode = {};
+        }
+        appState.playersByMode[appState.mode] = JSON.parse(JSON.stringify(appState.players));
         saveState();
         renderApp();
       }
@@ -2518,13 +2595,22 @@
       const modal = document.getElementById('playerModal');
       const container = document.getElementById('playerEditList');
       container.innerHTML = '';
+      const isAccumulate = appState.mode === 'accumulate';
+      const modalFocusBorder = isAccumulate ? 'focus:border-indigo-500' : 'focus:border-emerald-500';
+
+      const btnSavePlayer = document.getElementById('btnSavePlayerText');
+      if (btnSavePlayer) {
+        btnSavePlayer.className = isAccumulate
+          ? 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white shadow-sm shadow-indigo-600/20 transition flex items-center justify-center'
+          : 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-sm shadow-emerald-600/20 transition flex items-center justify-center';
+      }
 
       appState.players.forEach((p, idx) => {
         const div = document.createElement('div');
         div.className = 'flex items-center gap-2';
         div.innerHTML = `
           <span class="text-xs text-slate-400 font-mono w-6 text-center font-bold">#${idx + 1}</span>
-          <input type="text" id="modalPlayerName_${p.id}" value="${p.name}" class="flex-1 bg-white text-slate-800 font-semibold rounded-lg px-3 py-1.5 border border-slate-300 text-xs focus:border-emerald-500 focus:outline-none">
+          <input type="text" id="modalPlayerName_${p.id}" value="${p.name}" class="flex-1 bg-white text-slate-800 font-semibold rounded-lg px-3 py-1.5 border border-slate-300 text-xs ${modalFocusBorder} focus:outline-none">
           ${appState.players.length > 2 ? `
             <button onclick="removePlayer('${p.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Xóa người này">
               <i data-lucide="x" class="w-4 h-4"></i>
@@ -2549,17 +2635,31 @@
       const charLetter = String.fromCharCode(65 + appState.players.length);
       const prefix = t('defaultPlayerPrefix');
       appState.players.push({ id: 'p' + Date.now(), name: `${prefix}${charLetter}` });
+      if (!appState.playersByMode) {
+        appState.playersByMode = {};
+      }
+      appState.playersByMode[appState.mode] = JSON.parse(JSON.stringify(appState.players));
+      saveState();
       openPlayerModal();
+      renderApp();
     }
 
     function removePlayer(playerId) {
       if (confirm(t('deletePlayerConfirm'))) {
         appState.players = appState.players.filter(p => p.id !== playerId);
-        if (appState.roundsByMode) {
-          ['zero_sum', 'accumulate'].forEach(m => {
-            (appState.roundsByMode[m] || []).forEach(r => {
-              if (r.scores) delete r.scores[playerId];
-            });
+        if (!appState.playersByMode) {
+          appState.playersByMode = {};
+        }
+        appState.playersByMode[appState.mode] = JSON.parse(JSON.stringify(appState.players));
+
+        if (appState.roundsByMode && appState.roundsByMode[appState.mode]) {
+          appState.roundsByMode[appState.mode].forEach(r => {
+            if (r.scores) delete r.scores[playerId];
+          });
+        }
+        if (appState.rounds) {
+          appState.rounds.forEach(r => {
+            if (r.scores) delete r.scores[playerId];
           });
         }
         saveState();
@@ -2575,6 +2675,10 @@
           p.name = input.value.trim();
         }
       });
+      if (!appState.playersByMode) {
+        appState.playersByMode = {};
+      }
+      appState.playersByMode[appState.mode] = JSON.parse(JSON.stringify(appState.players));
       saveState();
       closePlayerModal();
       renderApp();
@@ -2589,8 +2693,15 @@
         }
         appState.roundsByMode[appState.mode] = [];
         appState.rounds = [];
+
+        // Đưa tên người chơi ở mode hiện tại về mặc định (Bạn A, Bạn B, ...)
+        appState.players = getDefaultPlayers(appState.lang);
+        if (!appState.playersByMode) {
+          appState.playersByMode = { zero_sum: [], accumulate: [] };
+        }
+        appState.playersByMode[appState.mode] = JSON.parse(JSON.stringify(appState.players));
+
         activeDraftScores = {};
-        syncPlayerNamesWithLanguage(appState.lang);
         saveState();
         renderApp();
         const panel = document.getElementById('summaryAccordion');
