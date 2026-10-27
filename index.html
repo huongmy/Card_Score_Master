@@ -70,7 +70,7 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent !important;
     }
-    input[type="number"], input[type="text"] {
+    input[type="number"], input[type="text"]:not(.editable-name) {
       font-size: 16px !important; /* Chuẩn 16px để iOS Safari không bao giờ tự động zoom gây nháy màn hình */
     }
     /* Ẩn mũi tên tăng giảm số mặc định trên input number */
@@ -110,10 +110,33 @@
       color: #475569 !important; /* slate-600 */
       font-weight: 600 !important;
     }
+    .editable-name {
+      font-size: 12px !important; /* Đồng bộ chính xác với font-size của cột Round & Pts/Total (text-xs = 12px) */
+      line-height: 1.25 !important;
+      font-weight: 700 !important;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+    }
+    @media (min-width: 640px) {
+      .editable-name {
+        font-size: 12px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+      }
+    }
     .editable-name:focus {
       background-color: #ffffff;
       outline: none;
       box-shadow: 0 0 0 2px #10b981;
+    }
+    .history-round-row {
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+    .history-round-row.holding-press {
+      background-color: #e2e8f0 !important;
+      transform: scale(0.99);
     }
   </style>
 </head>
@@ -150,8 +173,8 @@
           </div>
 
           <!-- Nút chia tiền HOẶC Bảng xếp hạng -->
-          <button onclick="toggleSummaryPanel()" id="btnToggleSummary" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs">
-            <i id="summaryBtnIcon" data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <button onclick="toggleSummaryPanel()" id="btnToggleSummary" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs shadow-emerald-600/20">
+            <i id="summaryBtnIcon" data-lucide="receipt" class="w-3.5 h-3.5 text-white"></i>
             <span id="lblSettlementBtn">Chia tiền</span>
             <i id="summaryChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
           </button>
@@ -197,8 +220,8 @@
           </div>
         </div>
 
-        <button onclick="toggleSummaryPanel()" id="btnToggleSummaryMobile" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shrink-0">
-          <i id="summaryBtnIconMobile" data-lucide="receipt" class="w-3 h-3 text-emerald-400"></i>
+        <button onclick="toggleSummaryPanel()" id="btnToggleSummaryMobile" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shadow-emerald-600/20 shrink-0">
+          <i id="summaryBtnIconMobile" data-lucide="receipt" class="w-3 h-3 text-white"></i>
           <span id="lblSettlementBtnMobile">Chia tiền</span>
         </button>
       </div>
@@ -209,19 +232,19 @@
   <!-- ACCORDION / DRAWER: BẢNG TỔNG KẾT & CHIA TIỀN HOẶC BẢNG XẾP HẠNG -->
   <section id="summaryAccordion" class="hidden border-b border-slate-200 bg-white shadow-md animate-in slide-in-from-top-2 duration-150">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div id="summaryIconBadge" class="p-1 rounded-md bg-emerald-100 text-emerald-800 transition-colors">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div id="summaryIconBadge" class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 transition-colors">
             <i id="summaryDrawerIcon" data-lucide="wallet" class="w-4 h-4"></i>
           </div>
-          <h2 class="text-xs sm:text-sm font-bold text-slate-900" id="lblScheduleTitle">Lịch Trình Chuyển Tiền (Ai trả ai)</h2>
+          <h2 class="text-xs sm:text-sm font-bold text-slate-900 truncate" id="lblScheduleTitle">Lịch Trình Chuyển Tiền</h2>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="btnCopySummary" onclick="copySummaryMessage()" class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1 rounded-lg transition">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btnCopySummary" onclick="copySummaryMessage()" class="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap shadow-2xs">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            <span id="lblCopyZaloBtn">Sao chép gửi Zalo</span>
+            <span id="lblCopyZaloBtn">Sao chép</span>
           </button>
-          <button onclick="toggleSummaryPanel()" class="text-slate-400 hover:text-slate-600 p-1">
+          <button onclick="toggleSummaryPanel()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition" title="Đóng">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -245,36 +268,36 @@
       </div>
 
       <div class="overflow-x-auto w-full">
-        <!-- Đặt min-w-[420px] sm:min-w-[540px] để 4 người chơi hiển thị trọn vẹn trên điện thoại -->
-        <table id="mainScoreTable" class="w-full text-left border-collapse text-sm min-w-[420px] sm:min-w-[540px]">
+        <!-- Đặt min-w-full sm:min-w-[500px] để bảng hiển thị rộng rãi, vừa vặn không bị thừa khoảng trắng -->
+        <table id="mainScoreTable" class="w-full text-left border-collapse text-sm min-w-full sm:min-w-[500px]">
           
           <!-- ================= HEADER THEO ĐÚNG HÌNH EXCEL CỦA BẠN ================= -->
           <thead>
             
             <!-- HÀNG 2 CỦA EXCEL: TỔNG ĐIỂM CỦA TỪNG NGƯỜI CHƠI (TỰ ĐỘNG TÍNH REALTIME) -->
             <tr id="playerTotalsHeaderRow" class="bg-slate-100/60 border-b border-slate-200/60">
-              <th class="py-2.5 px-2 w-16 text-center text-slate-600 font-bold text-xs shrink-0">
-                <div class="flex items-center justify-center gap-1">
-                  <span id="lblTotalRowHeader">Tổng</span>
+              <th class="py-2 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0">
+                <div class="flex items-center justify-center gap-0.5">
+                  <span id="lblTotalRowHeader" class="text-[11px] sm:text-xs">Tổng</span>
                   <button type="button" onclick="toggleTotalVisibility()" class="p-0.5 hover:bg-slate-200 rounded text-slate-500" title="Ẩn/Hiện tổng điểm">
-                    <i id="eyeIconTable" data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <i id="eyeIconTable" data-lucide="eye" class="w-3 h-3 text-emerald-600"></i>
                   </button>
                 </div>
               </th>
               
               <!-- Checksum cả bàn: Luôn phải = 0 -->
-              <th id="thTableChecksum" class="py-2.5 px-2 w-20 text-center">
-                <span class="inline-flex items-center gap-0.5 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-1.5 py-0.5 rounded">
+              <th id="thTableChecksum" class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0">
+                <span class="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-1 py-0.5 rounded">
                   0 ✓
                 </span>
               </th>
 
               <!-- Điểm tổng từng người chơi (ĐÃ BỎ HOÀN TOÀN GẠCH DỌC DƯ THỪA) -->
-              <th id="thPlayerTotalsRow" colspan="4" class="p-0">
+              <th id="thPlayerTotalsRow" colspan="4" class="p-0 border-r-0">
                 <!-- Sẽ inject cột tổng điểm từng người chơi ở đây -->
               </th>
 
-              <th class="py-2.5 px-2 w-16 text-center">
+              <th class="hidden lg:table-cell py-2 px-2 w-16 text-center border-r-0">
               </th>
             </tr>
 
@@ -292,26 +315,26 @@
             <tr id="activeInputRow" class="hidden lg:table-row bg-emerald-50/40 border-b-2 border-emerald-500/80 transition-colors">
               
               <!-- Cột A: Số ván -->
-              <td class="py-2 px-2 text-center">
+              <td class="py-2 px-1 w-10 sm:w-12 text-center border-r-0">
                 <span id="activeRoundNoBadge" class="inline-block px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold text-xs shadow-2xs font-mono">
                   #3
                 </span>
               </td>
 
               <!-- Cột B: Checksum ván đang nhập -->
-              <td class="py-2 px-2 text-center">
-                <div id="activeRowSumBadge" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs">
+              <td class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0">
+                <div id="activeRowSumBadge" class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono shadow-2xs">
                   0 ✓
                 </div>
               </td>
 
               <!-- Các ô nhập điểm từng người -->
-              <td id="tdActiveInputsContainer" colspan="4" class="p-0">
+              <td id="tdActiveInputsContainer" colspan="4" class="p-0 border-r-0">
                 <!-- Rendered by JS -->
               </td>
 
               <!-- Cột Thao tác: Nút Xóa dở, Nút Tự Cân & Nút Lưu ván -->
-              <td class="py-2 px-2 text-center font-sans">
+              <td class="hidden lg:table-cell py-2 px-2 w-16 text-center font-sans border-r-0">
                 <div class="flex items-center justify-center gap-1">
                   <button type="button" onclick="clearActiveDraft()" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title="Xóa trắng các ô đang nhập">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-500"></i>
@@ -350,8 +373,13 @@
             <span id="legendChecksumText">Cột B: Kiểm tra tổng = 0</span>
           </span>
         </div>
-        <div id="legendEnterKey" class="text-slate-400 font-medium hidden lg:block">
-          Nhấn phím <kbd class="px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]">Enter</kbd> để lưu ván
+        <div class="flex items-center gap-3">
+          <span id="legendHoldToEditText" class="text-slate-500 font-medium">
+            💡 Bấm giữ vào ván để sửa hoặc xóa
+          </span>
+          <div id="legendEnterKey" class="text-slate-400 font-medium hidden lg:block">
+            Nhấn phím <kbd class="px-1 py-0.5 rounded bg-white border border-slate-300 text-slate-700 font-mono text-[10px]">Enter</kbd> để lưu ván
+          </div>
         </div>
       </div>
 
@@ -412,13 +440,13 @@
 
     <!-- Nút thao tác trên điện thoại (Sticky ở đáy Bottom Sheet để không bao giờ bị che) -->
     <div class="flex items-center gap-2 pt-1 sticky bottom-0 bg-white">
-      <button type="button" id="btnAutoBalanceMobile" onmousedown="event.preventDefault()" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs">
+      <button type="button" id="btnAutoBalanceMobile" onmousedown="event.preventDefault()" onclick="autoBalanceActiveRow()" class="flex-1 py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap">
         <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
-        <span id="lblAutoBalanceMobile">Tự cân người còn lại</span>
+        <span id="lblAutoBalanceMobile">Tự cân</span>
       </button>
-      <button type="button" id="btnCommitRoundMobile" onclick="commitActiveRound()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 opacity-60">
+      <button type="button" id="btnCommitRoundMobile" onclick="commitActiveRound()" class="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-1.5 opacity-60 whitespace-nowrap">
         <i data-lucide="check" class="w-4 h-4"></i>
-        <span id="lblCommitRoundMobile">Lưu ván này (Enter)</span>
+        <span id="lblCommitRoundMobile">Lưu ván</span>
       </button>
     </div>
     <!-- Chân che đáy để khi trồi lên trên bàn phím ảo luôn liền khối và phẳng phiu -->
@@ -451,13 +479,15 @@
         </button>
       </div>
 
-      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-        <button onclick="closePlayerModal()" id="btnCancelPlayerText" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
-          Hủy
-        </button>
-        <button onclick="savePlayersFromModal()" id="btnSavePlayerText" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm">
-          Lưu thay đổi
-        </button>
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100">
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="closePlayerModal()" id="btnCancelPlayerText" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 active:bg-slate-200 border border-slate-200 shadow-2xs transition flex items-center justify-center">
+            Hủy
+          </button>
+          <button type="button" onclick="savePlayersFromModal()" id="btnSavePlayerText" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-sm shadow-emerald-600/20 transition flex items-center justify-center">
+            Lưu thay đổi
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -470,7 +500,7 @@
           <i data-lucide="edit-3" class="w-4 h-4 text-emerald-600"></i>
           <span>Sửa Điểm Ván</span>
         </h3>
-        <button onclick="closeEditRoundModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+        <button onclick="closeEditRoundModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition" title="Đóng">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -497,14 +527,25 @@
         </div>
       </div>
 
-      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-        <button onclick="closeEditRoundModal()" id="btnCancelEditText" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
-          Hủy bỏ
-        </button>
-        <button id="btnSaveEditModal" onclick="saveEditRoundFromModal()" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1">
-          <i data-lucide="check" class="w-3.5 h-3.5"></i>
-          <span id="btnSaveEditText">Lưu thay đổi</span>
-        </button>
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 space-y-2.5">
+        <!-- Hàng 1: Nút Hủy và Nút Lưu đồng đều chuẩn Form Modal hiện đại -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="closeEditRoundModal()" id="btnCancelEditText" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 active:bg-slate-200 border border-slate-200 shadow-2xs transition flex items-center justify-center">
+            Hủy bỏ
+          </button>
+          <button type="button" id="btnSaveEditModal" onclick="saveEditRoundFromModal()" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-sm shadow-emerald-600/20 transition flex items-center justify-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span id="btnSaveEditText">Lưu thay đổi</span>
+          </button>
+        </div>
+
+        <!-- Hàng 2: Nút Xóa ván này - màu xám nhẹ tinh tế, an toàn, không lo bấm nhầm -->
+        <div class="pt-1.5 border-t border-slate-200/60 flex justify-center">
+          <button type="button" id="btnDeleteCurrentRoundInModal" onclick="deleteRoundFromModal()" onmouseup="this.blur()" ontouchend="this.blur()" class="py-1 px-3 rounded-lg text-[11px] font-medium text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:bg-transparent select-none outline-none focus:outline-none focus:bg-transparent transition flex items-center gap-1.5" title="Xóa ván này khỏi bảng">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
+            <span id="btnDeleteRoundModalText" class="pointer-events-none select-none">Xóa ván này</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -524,9 +565,9 @@
         modeAccumulate: "Cộng dồn đua điểm",
         settlementBtn: "Chia tiền",
         leaderboardBtn: "Bảng xếp hạng",
-        scheduleTitle: "Lịch Trình Chuyển Tiền (Ai trả ai)",
-        leaderboardTitle: "Bảng Xếp Hạng Đua Điểm 🏆",
-        copyZaloBtn: "Sao chép gửi Zalo",
+        scheduleTitle: "Lịch Trình Chuyển Tiền",
+        leaderboardTitle: "Bảng Xếp Hạng Đua Điểm",
+        copyZaloBtn: "Sao chép",
         copiedSettlementMsg: "Đã sao chép nội dung chia tiền! Bạn có thể dán vào nhóm Zalo.",
         copiedLeaderboardMsg: "Đã sao chép bảng xếp hạng! Bạn có thể dán vào nhóm Zalo.",
         noTransactions: "Bàn cờ đang hòa hoặc chưa có điểm phát sinh.",
@@ -540,13 +581,17 @@
         mobileInputTitle: "Nhập điểm ván mới",
         openMobileSheetBtn: "Ghi Điểm Ván Mới (#{round})",
         closeSheetBtn: "Đóng",
-        tapToEditRound: "Chạm vào dòng để sửa điểm ván #{round}",
+        tapToEditRound: "Bấm giữ để sửa hoặc xóa ván #{round}",
+        deleteRoundModalBtn: "Xóa ván này",
+        legendHoldToEdit: "💡 Bấm giữ vào ván để sửa hoặc xóa",
         resetDraft: "Nhập lại",
         resetDraftTitle: "Xóa các ô điểm đang gõ dở để nhập lại",
         balancedCheck: "0 ✓ Cân bằng",
         unbalancedAlert: "Lệch:",
         autoBalanceBtn: "Tự cân người còn lại",
+        autoBalanceMobile: "Tự cân",
         saveRoundBtn: "Lưu ván này (Enter)",
+        saveRoundMobile: "Lưu ván",
         swipeGuide: "👉 Vuốt ngang bảng bên dưới để xem đầy đủ các cột",
         colRound: "Ván",
         colTotal: "Tổng",
@@ -589,7 +634,7 @@
         statusDrafting: "Đang nhập",
         statusRound1: "Ván 1",
         alertAllZero: "Chưa nhập điểm cho ván này! Điểm của tất cả người chơi không thể đồng thời bằng 0.",
-        pointsUnit: "đ"
+        pointsUnit: "điểm"
       },
       en: {
         appTitle: "Card Score Master",
@@ -600,9 +645,9 @@
         modeAccumulate: "Points Race",
         settlementBtn: "Settlement",
         leaderboardBtn: "Leaderboard",
-        scheduleTitle: "Settlement Schedule (Who pays whom)",
-        leaderboardTitle: "Points Race Leaderboard 🏆",
-        copyZaloBtn: "Copy for Chat / Zalo",
+        scheduleTitle: "Settlement Schedule",
+        leaderboardTitle: "Points Race Leaderboard",
+        copyZaloBtn: "Copy",
         copiedSettlementMsg: "Settlement summary copied! You can paste it into your chat.",
         copiedLeaderboardMsg: "Leaderboard copied! You can paste it into your chat.",
         noTransactions: "Game is tied or no scores entered yet.",
@@ -616,13 +661,17 @@
         mobileInputTitle: "Enter round score",
         openMobileSheetBtn: "Enter Round #{round} Score",
         closeSheetBtn: "Close",
-        tapToEditRound: "Tap row to edit round #{round} score",
+        tapToEditRound: "Press & hold to edit or delete round #{round}",
+        deleteRoundModalBtn: "Delete round",
+        legendHoldToEdit: "💡 Press & hold any round to edit or delete",
         resetDraft: "Reset draft",
         resetDraftTitle: "Clear current unsaved inputs",
         balancedCheck: "0 ✓ Balanced",
         unbalancedAlert: "Diff:",
         autoBalanceBtn: "Auto-balance last player",
+        autoBalanceMobile: "Auto-balance",
         saveRoundBtn: "Save Round (Enter)",
+        saveRoundMobile: "Save round",
         swipeGuide: "👉 Swipe horizontally to view all table columns",
         colRound: "Round",
         colTotal: "Total",
@@ -754,6 +803,19 @@
 
           // Gán con trỏ rounds vào đúng mảng của mode hiện tại
           parsed.rounds = parsed.roundsByMode[parsed.mode] || [];
+
+          // Đồng bộ tên mặc định của người chơi theo ngôn ngữ đã lưu
+          if (Array.isArray(parsed.players)) {
+            const targetPrefix = parsed.lang === 'en' ? 'Player ' : 'Bạn ';
+            parsed.players.forEach(p => {
+              if (!p || !p.name) return;
+              const match = p.name.trim().match(/^(?:Bạn|Player)\s+([A-Za-z]|[0-9]+)$/i);
+              if (match) {
+                p.name = `${targetPrefix}${match[1].toUpperCase()}`;
+              }
+            });
+          }
+
           return parsed;
         }
       } catch (e) {
@@ -772,9 +834,23 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     }
 
+    // --- ĐỒNG BỘ TÊN MẶC ĐỊNH CỦA NGƯỜI CHƠI THEO NGÔN NGỮ (BẠN X <-> PLAYER X) ---
+    function syncPlayerNamesWithLanguage(lang) {
+      if (!appState || !Array.isArray(appState.players)) return;
+      const targetPrefix = lang === 'en' ? 'Player ' : 'Bạn ';
+      appState.players.forEach(p => {
+        if (!p || !p.name) return;
+        const match = p.name.trim().match(/^(?:Bạn|Player)\s+([A-Za-z]|[0-9]+)$/i);
+        if (match) {
+          p.name = `${targetPrefix}${match[1].toUpperCase()}`;
+        }
+      });
+    }
+
     // --- CHUYỂN ĐỔI NGÔN NGỮ (VI / EN) ---
     function setLanguage(lang) {
       appState.lang = lang;
+      syncPlayerNamesWithLanguage(lang);
       saveState();
       updateLanguageUI();
       updateModeUI();
@@ -823,8 +899,8 @@
       setTxt('lblCopyZaloBtn', t('copyZaloBtn'));
       setTxt('lblMobileInputTitle', t('mobileInputTitle'));
       setTxt('lblResetDraft', t('resetDraft'));
-      setTxt('lblAutoBalanceMobile', t('autoBalanceBtn'));
-      setTxt('lblCommitRoundMobile', t('saveRoundBtn'));
+      setTxt('lblAutoBalanceMobile', t('autoBalanceMobile'));
+      setTxt('lblCommitRoundMobile', t('saveRoundMobile'));
       setTxt('lblSwipeGuide', t('swipeGuide'));
       setHtml('legendEnterKey', t('legendEnter'));
       setTxt('legendPositiveText', t('legendPositive'));
@@ -841,6 +917,8 @@
       setTxt('btnAutoBalanceEditText', t('autoBalanceModalBtn'));
       setTxt('btnCancelEditText', t('cancelBtn'));
       setTxt('btnSaveEditText', t('saveChangesBtn'));
+      setTxt('btnDeleteRoundModalText', t('deleteRoundModalBtn'));
+      setTxt('legendHoldToEditText', t('legendHoldToEdit'));
     }
 
     // --- XÓA TOÀN BỘ ĐIỂM ĐANG GÕ DỞ ĐỂ NHẬP LẠI ---
@@ -888,14 +966,17 @@
     }
 
     function formatNumber(val) {
-      if (val > 0) return `+${val}`;
       return `${val}`;
     }
 
     function formatCurrency(val) {
       const isEn = appState.lang === 'en';
-      const unit = isEn ? ' pts' : ' đ';
+      const isAccumulate = appState.mode === 'accumulate';
       const absVal = Math.abs(val).toLocaleString(isEn ? 'en-US' : 'vi-VN');
+      if (!isAccumulate) {
+        return `${absVal}`;
+      }
+      const unit = isEn ? ' pts' : ' điểm';
       if (val > 0) return `+${absVal}${unit}`;
       if (val < 0) return `-${absVal}${unit}`;
       return `0${unit}`;
@@ -1011,13 +1092,26 @@
       if (lblSettlementM) lblSettlementM.textContent = btnText;
       if (lblScheduleTitle) lblScheduleTitle.textContent = drawerTitle;
 
+      const btnToggleSummary = document.getElementById('btnToggleSummary');
+      const btnToggleSummaryMobile = document.getElementById('btnToggleSummaryMobile');
+      if (btnToggleSummary) {
+        btnToggleSummary.className = isZeroSum
+          ? 'flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs shadow-emerald-600/20'
+          : 'flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs shadow-indigo-600/20';
+      }
+      if (btnToggleSummaryMobile) {
+        btnToggleSummaryMobile.className = isZeroSum
+          ? 'flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shadow-emerald-600/20 shrink-0'
+          : 'flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs shadow-indigo-600/20 shrink-0';
+      }
+
       if (summaryBtnIcon) {
         summaryBtnIcon.setAttribute('data-lucide', iconName);
-        summaryBtnIcon.className = isZeroSum ? 'w-3.5 h-3.5 text-emerald-400' : 'w-3.5 h-3.5 text-amber-400';
+        summaryBtnIcon.className = isZeroSum ? 'w-3.5 h-3.5 text-white' : 'w-3.5 h-3.5 text-amber-300';
       }
       if (summaryBtnIconM) {
         summaryBtnIconM.setAttribute('data-lucide', iconName);
-        summaryBtnIconM.className = isZeroSum ? 'w-3 h-3 text-emerald-400' : 'w-3 h-3 text-amber-400';
+        summaryBtnIconM.className = isZeroSum ? 'w-3 h-3 text-white' : 'w-3 h-3 text-amber-300';
       }
       if (summaryDrawerIcon) summaryDrawerIcon.setAttribute('data-lucide', drawerIconName);
 
@@ -1110,8 +1204,8 @@
       const btnSaveEditModal = document.getElementById('btnSaveEditModal');
       if (btnSaveEditModal) {
         btnSaveEditModal.className = isZeroSum
-          ? 'px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1'
-          : 'px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm flex items-center gap-1';
+          ? 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-sm shadow-emerald-600/20 transition flex items-center justify-center gap-1.5'
+          : 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white shadow-sm shadow-indigo-600/20 transition flex items-center justify-center gap-1.5';
       }
 
       // 10. Đồng bộ màu nút đổi ngôn ngữ
@@ -1178,6 +1272,12 @@
       renderHistoricalRounds();
       updateTableChecksum();
       updateMobileBottomDock();
+
+      // Tự động cập nhật Settlement / Leaderboard theo thời gian thực nếu drawer đang mở
+      const summaryPanel = document.getElementById('summaryAccordion');
+      if (summaryPanel && !summaryPanel.classList.contains('hidden')) {
+        renderSummaryPanel();
+      }
 
       // Chỉ hiển thị hướng dẫn vuốt ngang khi có nhiều hơn 4 người chơi
       const swipeGuide = document.getElementById('lblSwipeGuide');
@@ -1324,9 +1424,9 @@
       // Kiểu viền hàng tổng (Không kẻ dọc, viền ngang mờ tinh tế)
       playerTotalsRow.className = 'bg-slate-100/60 border-b border-slate-200/60';
       const thTotalFirst = playerTotalsRow.querySelector('th:first-child');
-      if (thTotalFirst) thTotalFirst.className = 'py-2.5 px-2 w-16 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0';
+      if (thTotalFirst) thTotalFirst.className = 'py-2 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0';
       const thChecksum = document.getElementById('thTableChecksum');
-      if (thChecksum) thChecksum.className = 'py-2.5 px-2 w-20 text-center border-r-0';
+      if (thChecksum) thChecksum.className = 'py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0';
 
       thTotalsRow.setAttribute('colspan', appState.players.length);
       thTotalsRow.className = 'p-0 border-r-0';
@@ -1364,7 +1464,7 @@
 
         totalsCellsHtml += `
           <div class="py-2.5 px-1 text-center border-r-0 ${cellBg}">
-            <div class="font-mono text-sm sm:text-base font-extrabold flex items-center justify-center ${textClass}">
+            <div class="font-mono text-base sm:text-lg font-extrabold tracking-tight flex items-center justify-center ${textClass}">
               ${leaderCrown}${displayValue}
             </div>
           </div>
@@ -1379,10 +1479,10 @@
       const colBTitle = isAccumulate ? (appState.lang === 'en' ? 'Pts' : 'Điểm') : t('colTotal');
 
       let namesRowHtml = `
-        <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+        <th class="py-2 px-1 w-10 sm:w-12 text-center font-bold text-slate-700 text-xs border-r-0">
           ${t('colRound')}
         </th>
-        <th class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
+        <th class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center font-bold text-slate-700 text-xs border-r-0">
           ${colBTitle}
         </th>
       `;
@@ -1393,18 +1493,18 @@
 
       appState.players.forEach((p, idx) => {
         namesRowHtml += `
-          <th class="py-1.5 px-1 text-center border-r-0">
+          <th class="py-1.5 px-0.5 sm:px-1 text-center border-r-0">
             <div class="relative group">
               <input type="text" value="${p.name}" 
                 onchange="updatePlayerNameInline('${p.id}', this.value)"
                 title="Bấm vào để đổi tên"
-                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-1 border border-slate-200/80 ${nameHoverFocus} transition shadow-2xs">
+                class="editable-name w-full bg-slate-100/60 hover:bg-white text-center font-bold text-xs text-slate-800 rounded-md py-1 px-0.5 sm:px-1 border border-slate-200/80 ${nameHoverFocus} transition shadow-2xs">
             </div>
           </th>
         `;
       });
 
-      namesRowHtml += `<th class="py-2.5 px-2 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
+      namesRowHtml += `<th class="hidden lg:table-cell py-2 px-2 w-16 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
       playerNamesRow.innerHTML = namesRowHtml;
     }
 
@@ -1463,9 +1563,9 @@
       const activeRow = document.getElementById('activeInputRow');
       if (activeRow) {
         const colA = activeRow.querySelector('td:nth-child(1)');
-        if (colA) colA.className = 'py-2 px-2 text-center border-r-0';
+        if (colA) colA.className = 'py-2 px-1 w-10 sm:w-12 text-center border-r-0';
         const colB = activeRow.querySelector('td:nth-child(2)');
-        if (colB) colB.className = 'py-2 px-2 text-center border-r-0';
+        if (colB) colB.className = 'py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0';
         const colContainer = activeRow.querySelector('td:nth-child(3)');
         if (colContainer) colContainer.className = 'p-0 border-r-0';
       }
@@ -1487,7 +1587,7 @@
               data-form-type="other" data-lpignore="true" data-1p-ignore="true" inputmode="numeric"
               oninput="handleLiveInput('${p.id}', this, false)"
               onkeydown="handleDraftKeydown(event, ${idx})"
-              class="w-full max-w-[85px] bg-white text-center font-mono text-sm sm:text-base rounded-lg py-1 px-1 border-2 border-slate-300 ${draftFocusBorder} focus:outline-none shadow-2xs transition-colors ${colorClass}">
+              class="w-full max-w-[85px] bg-white text-center font-mono text-base font-extrabold rounded-lg py-1 px-1 border-2 border-slate-300 ${draftFocusBorder} focus:outline-none shadow-2xs transition-colors ${colorClass}">
           </div>
         `;
       });
@@ -1578,7 +1678,7 @@
             badgeMobile.textContent = t('balancedCheck');
           } else {
             badgeMobile.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse shadow-2xs';
-            badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum} ${t('pointsUnit')}!`;
+            badgeMobile.textContent = `${t('unbalancedAlert')} ${sum > 0 ? '+' : ''}${sum}!`;
           }
         }
       }
@@ -1749,6 +1849,85 @@
       setTimeout(() => scrollToNewRound(nextRoundNo), 360);
     }
 
+    // --- GẮN SỰ KIỆN BẤM GIỮ (LONG-PRESS) ĐỂ MỞ PANEL SỬA / XÓA VÁN ---
+    function attachLongPressToRoundRow(tr, roundNo) {
+      let pressTimer = null;
+      let startX = 0;
+      let startY = 0;
+      let triggered = false;
+
+      function startHold(e) {
+        triggered = false;
+        if (e.type === 'touchstart') {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+        }
+        tr.classList.add('holding-press');
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(() => {
+          triggered = true;
+          tr.classList.remove('holding-press');
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (_) {}
+          }
+          openEditRoundModal(roundNo);
+        }, 450); // 450ms: thời gian bấm giữ chuẩn trên di động
+      }
+
+      function cancelHold() {
+        tr.classList.remove('holding-press');
+        clearTimeout(pressTimer);
+      }
+
+      function checkMove(e) {
+        let curX = 0, curY = 0;
+        if (e.type === 'touchmove') {
+          curX = e.touches[0].clientX;
+          curY = e.touches[0].clientY;
+        } else {
+          curX = e.clientX;
+          curY = e.clientY;
+        }
+        // Nếu ngón tay di chuyển > 8px (người dùng đang cuộn trang hoặc vuốt ngang) -> hủy bấm giữ
+        if (Math.abs(curX - startX) > 8 || Math.abs(curY - startY) > 8) {
+          cancelHold();
+        }
+      }
+
+      tr.addEventListener('touchstart', startHold, { passive: true });
+      tr.addEventListener('touchend', cancelHold, { passive: true });
+      tr.addEventListener('touchcancel', cancelHold, { passive: true });
+      tr.addEventListener('touchmove', checkMove, { passive: true });
+
+      tr.addEventListener('mousedown', (e) => {
+        if (e.button === 0) startHold(e);
+      });
+      tr.addEventListener('mouseup', cancelHold);
+      tr.addEventListener('mouseleave', cancelHold);
+      tr.addEventListener('mousemove', checkMove);
+
+      // Trên máy tính: chuột phải hoặc click đúp cũng mở được modal
+      tr.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        cancelHold();
+        openEditRoundModal(roundNo);
+      });
+      tr.addEventListener('dblclick', () => {
+        cancelHold();
+        openEditRoundModal(roundNo);
+      });
+
+      tr.onclick = (e) => {
+        if (triggered) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+    }
+
     // --- RENDER LỊCH SỬ CÁC VÁN ĐÃ ĐÁNH ---
     function renderHistoricalRounds() {
       const tbody = document.getElementById('activeInputRow').parentNode;
@@ -1786,28 +1965,28 @@
 
         // Cột A: Số ván là 1
         let html = `
-          <td class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
-            1
+          <td class="py-2.5 px-1 w-10 sm:w-12 text-center font-mono font-bold text-slate-500 border-r-0 text-xs sm:text-sm">
+            #1
           </td>
         `;
 
         // Cột B: Checksum ván 1 hoặc tổng điểm
         let colBContent = '';
         if (isAccumulate) {
-          colBContent = `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${draftSum} ${t('pointsUnit')}</span>`;
+          colBContent = `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${draftSum} ${t('pointsUnit')}</span>`;
         } else {
           colBContent = isBalanced 
-            ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
-            : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">⚠️ ${draftSum > 0 ? '+' : ''}${draftSum}</span>`;
+            ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+            : `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">⚠️ ${draftSum > 0 ? '+' : ''}${draftSum}</span>`;
         }
 
         html += `
-          <td class="py-2.5 px-2 text-center border-r-0">
+          <td class="py-2.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0 font-mono text-xs">
             ${colBContent}
           </td>
         `;
 
-        // Điểm từng người: Mặc định là 0, hoặc hiển thị realtime số đang gõ
+        // Điểm từng người: To rõ, in đậm (font-extrabold text-base sm:text-lg)
         html += `<td colspan="${appState.players.length}" class="p-0 border-r-0">
           <div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">
         `;
@@ -1820,7 +1999,7 @@
           const isNeg = sc < 0;
 
           html += `
-            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-bold text-xs sm:text-sm ${
+            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-extrabold text-base sm:text-lg tracking-tight ${
               !hasVal ? 'text-slate-400' :
               isPos ? 'text-emerald-600 bg-emerald-50/20' :
               isNeg ? 'text-rose-600 bg-rose-50/20' :
@@ -1833,11 +2012,11 @@
 
         html += `</div></td>`;
 
-        // Cột Thao tác: Nhãn hiển thị trạng thái Ván 1 / Đang nhập
+        // Cột Thao tác: Trên desktop có nhãn trạng thái, trên mobile ẩn đi
         const statusLabel = hasAnyInput ? t('statusDrafting') : t('statusRound1');
         html += `
-          <td class="py-2.5 px-2 text-center font-sans">
-            <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+          <td class="hidden lg:table-cell py-2.5 px-1 w-16 text-center font-sans border-r-0">
+            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
               ${statusLabel}
             </span>
           </td>
@@ -1851,9 +2030,11 @@
       sortedRounds.forEach((round) => {
         const tr = document.createElement('tr');
         tr.id = `historyRow_${round.roundNo}`;
-        tr.className = 'history-round-row hover:bg-slate-100/70 active:bg-slate-200/50 cursor-pointer transition-colors duration-200 group border-b border-slate-100/90 select-none';
+        tr.className = 'history-round-row hover:bg-slate-50/80 active:bg-slate-100/80 cursor-pointer transition-colors duration-150 group border-b border-slate-100/90 select-none';
         tr.title = t('tapToEditRound').replace('{round}', round.roundNo);
-        tr.onclick = () => openEditRoundModal(round.roundNo);
+
+        // Gắn sự kiện Bấm Giữ (Long Press) để mở panel sửa / xóa
+        attachLongPressToRoundRow(tr, round.roundNo);
 
         let roundSum = 0;
         appState.players.forEach(p => {
@@ -1862,30 +2043,30 @@
 
         const isBalanced = roundSum === 0;
 
-        // Cột A: Số ván
+        // Cột A: Số ván (nhỏ gọn, số cố định)
         let html = `
-          <td class="py-2.5 px-2 text-center font-bold text-slate-700 border-r-0">
-            ${round.roundNo}
+          <td class="py-2.5 px-1 w-10 sm:w-12 text-center font-mono font-bold text-slate-500 border-r-0 text-xs sm:text-sm">
+            #${round.roundNo}
           </td>
         `;
 
-        // Cột B: Tổng ván hoặc Điểm ván
+        // Cột B: Tổng ván hoặc Điểm ván (nhỏ gọn, số cố định)
         let colBContent = '';
         if (isAccumulate) {
-          colBContent = `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${roundSum} ${t('pointsUnit')}</span>`;
+          colBContent = `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 font-mono">${roundSum} ${t('pointsUnit')}</span>`;
         } else {
           colBContent = isBalanced 
-            ? `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
-            : `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300">⚠️ ${roundSum > 0 ? '+' : ''}${roundSum}</span>`;
+            ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">0 ✓</span>`
+            : `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300">⚠️ ${roundSum > 0 ? '+' : ''}${roundSum}</span>`;
         }
 
         html += `
-          <td class="py-2.5 px-2 text-center border-r-0">
+          <td class="py-2.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0 font-mono text-xs">
             ${colBContent}
           </td>
         `;
 
-        // Điểm từng người
+        // Cột C: Điểm từng người chơi (TO RÕ, IN ĐẬM: font-extrabold text-base sm:text-lg)
         html += `<td colspan="${appState.players.length}" class="p-0 border-r-0">
           <div class="grid" style="grid-template-columns: repeat(${appState.players.length}, minmax(0, 1fr));">
         `;
@@ -1896,7 +2077,7 @@
           const isNeg = sc < 0;
 
           html += `
-            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-bold text-xs sm:text-sm ${
+            <div class="py-2.5 px-1 text-center last:border-r-0 border-r-0 font-mono font-extrabold text-base sm:text-lg tracking-tight ${
               isPos ? 'text-emerald-600 bg-emerald-50/20' :
               isNeg ? 'text-rose-600 bg-rose-50/20' :
               'text-slate-400'
@@ -1908,14 +2089,9 @@
 
         html += `</div></td>`;
 
-        // Thao tác: Chỉ hiện nút Xóa (🗑️), bấm vào dòng để Sửa điểm ván
+        // Cột Thao tác: ĐÃ BỎ NÚT XÓA TRỰC TIẾP TRÊN DÒNG. Trên desktop có thể để ô trống đồng bộ số cột, trên mobile ẩn hoàn toàn!
         html += `
-          <td class="py-2.5 px-1.5 text-center font-sans">
-            <div class="flex items-center justify-center">
-              <button type="button" onclick="event.stopPropagation(); deleteHistoricalRound(${round.roundNo})" class="p-1.5 text-slate-400 hover:text-rose-600 active:text-rose-700 rounded-lg hover:bg-rose-50 active:bg-rose-100 transition" title="${t('deleteRoundTitle')}${round.roundNo}">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
+          <td class="hidden lg:table-cell py-2.5 px-1 w-16 text-center font-sans border-r-0">
           </td>
         `;
 
@@ -1924,9 +2100,19 @@
       });
     }
 
-    function deleteHistoricalRound(roundNo) {
+    function deleteRoundFromModal() {
+      if (document.activeElement) document.activeElement.blur();
+      if (window.getSelection) window.getSelection().removeAllRanges();
+
+      if (!currentEditingRoundNo) return;
+      const roundNo = currentEditingRoundNo;
       const confirmMsg = t('confirmDeleteRound').replace('{round}', roundNo);
-      if (confirm(confirmMsg)) {
+      const isConfirmed = confirm(confirmMsg);
+
+      if (document.activeElement) document.activeElement.blur();
+      if (window.getSelection) window.getSelection().removeAllRanges();
+
+      if (isConfirmed) {
         appState.rounds = appState.rounds.filter(r => r.roundNo !== roundNo);
         appState.rounds.sort((a, b) => a.roundNo - b.roundNo);
         appState.rounds.forEach((r, idx) => r.roundNo = idx + 1);
@@ -1934,6 +2120,7 @@
           appState.roundsByMode[appState.mode] = appState.rounds;
         }
         saveState();
+        closeEditRoundModal();
         renderApp();
       }
     }
@@ -1969,8 +2156,8 @@
       const btnSaveEdit = document.getElementById('btnSaveEditModal');
       if (btnSaveEdit) {
         btnSaveEdit.className = isAccumulate
-          ? 'px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm flex items-center gap-1'
-          : 'px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm flex items-center gap-1';
+          ? 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white shadow-sm shadow-indigo-600/20 transition flex items-center justify-center gap-1.5'
+          : 'w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-sm shadow-emerald-600/20 transition flex items-center justify-center gap-1.5';
       }
 
       const container = document.getElementById('editPlayerInputsContainer');
@@ -2036,7 +2223,7 @@
           msg.textContent = t('balancedSumMsg');
         } else {
           box.className = 'p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all bg-rose-50 border-rose-300 text-rose-800';
-          msg.textContent = `${t('unbalancedSumMsg')} ${sum > 0 ? '+' : ''}${sum} ${t('pointsUnit')}! ⚠️`;
+          msg.textContent = `${t('unbalancedSumMsg')} ${sum > 0 ? '+' : ''}${sum}! ⚠️`;
         }
       }
     }
@@ -2186,7 +2373,7 @@
 
       const totals = calculatePlayerTotals(false);
       const isEn = appState.lang === 'en';
-      const unit = isEn ? ' pts' : ' đ';
+      const unit = isEn ? ' pts' : ' điểm';
 
       // Sắp xếp người chơi theo điểm giảm dần
       const ranked = [...appState.players].map(p => ({
@@ -2226,7 +2413,7 @@
               <div class="text-[10px] text-slate-500 font-medium">${rankLabel}</div>
             </div>
           </div>
-          <div class="font-mono font-extrabold text-sm sm:text-base ${isTop1 ? 'text-amber-700' : 'text-slate-800'}">
+          <div class="font-mono font-bold text-xs sm:text-sm ${isTop1 ? 'text-amber-800' : 'text-slate-900'}">
             ${item.score.toLocaleString(isEn ? 'en-US' : 'vi-VN')}${unit}
           </div>
         `;
@@ -2403,6 +2590,7 @@
         appState.roundsByMode[appState.mode] = [];
         appState.rounds = [];
         activeDraftScores = {};
+        syncPlayerNamesWithLanguage(appState.lang);
         saveState();
         renderApp();
         const panel = document.getElementById('summaryAccordion');
@@ -2414,6 +2602,7 @@
 
     // Khởi tạo app
     document.addEventListener('DOMContentLoaded', () => {
+      syncPlayerNamesWithLanguage(appState.lang);
       updateLanguageUI();
       updateModeUI();
       renderApp();
