@@ -138,6 +138,36 @@
       background-color: #e2e8f0 !important;
       transform: scale(0.99);
     }
+    /* ================= CỐ ĐỊNH PHẦN HEADER BẢNG KHI CUỘN (FREEZE PANES) ================= */
+    #tableScrollWrapper {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    #mainScoreTable thead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    #playerTotalsHeaderRow th {
+      position: sticky;
+      top: 0;
+      z-index: 22;
+      background-color: #f1f5f9; /* Solid opaque bg-slate-100 */
+    }
+    #playerNamesHeaderRow th {
+      position: sticky;
+      top: 40px; /* Bám sát ngay dưới hàng Tổng điểm cao 40px */
+      z-index: 21;
+    }
+    #mainScoreTable.mode-accumulate #playerNamesHeaderRow th,
+    .mode-accumulate #playerNamesHeaderRow th {
+      background-color: #eef2ff !important; /* Solid opaque bg-indigo-50 */
+    }
+    #mainScoreTable.mode-zero_sum #playerNamesHeaderRow th,
+    .mode-zero_sum #playerNamesHeaderRow th,
+    #playerNamesHeaderRow th {
+      background-color: #ecfdf5 !important; /* Solid opaque bg-emerald-50 */
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
@@ -257,7 +287,7 @@
   </section>
 
   <!-- MAIN WRAPPER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 space-y-3 pb-24 lg:pb-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3 pb-20 lg:pb-6">
 
     <!-- ================= BẢNG EXCEL ĐẦY ĐỦ (GIAO DIỆN KHÔNG KẺ KHUNG - TỐI GIẢN & HIỆN ĐẠI) ================= -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -267,16 +297,16 @@
         👉 Vuốt ngang bảng bên dưới để xem đầy đủ các cột
       </div>
 
-      <div class="overflow-x-auto w-full">
+      <div id="tableScrollWrapper" class="overflow-auto w-full overscroll-contain max-h-[calc(100vh-240px)] max-h-[calc(100dvh-235px)] sm:max-h-[calc(100vh-220px)]">
         <!-- Đặt min-w-full sm:min-w-[500px] để bảng hiển thị rộng rãi, vừa vặn không bị thừa khoảng trắng -->
         <table id="mainScoreTable" class="w-full text-left border-collapse text-sm min-w-full sm:min-w-[500px]">
           
-          <!-- ================= HEADER THEO ĐÚNG HÌNH EXCEL CỦA BẠN ================= -->
-          <thead>
+          <!-- ================= HEADER CỐ ĐỊNH KHI CUỘN (FREEZE PANES) ================= -->
+          <thead class="sticky top-0 z-20 shadow-xs">
             
             <!-- HÀNG 2 CỦA EXCEL: TỔNG ĐIỂM CỦA TỪNG NGƯỜI CHƠI (TỰ ĐỘNG TÍNH REALTIME) -->
-            <tr id="playerTotalsHeaderRow" class="bg-slate-100/60 border-b border-slate-200/60">
-              <th class="py-2 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0">
+            <tr id="playerTotalsHeaderRow" class="bg-slate-100 border-b border-slate-200/80 h-10">
+              <th class="py-1.5 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0">
                 <div class="flex items-center justify-center gap-0.5">
                   <span id="lblTotalRowHeader" class="text-[11px] sm:text-xs">Tổng</span>
                   <button type="button" onclick="toggleTotalVisibility()" class="p-0.5 hover:bg-slate-200 rounded text-slate-500" title="Ẩn/Hiện tổng điểm">
@@ -286,7 +316,7 @@
               </th>
               
               <!-- Checksum cả bàn: Luôn phải = 0 -->
-              <th id="thTableChecksum" class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0">
+              <th id="thTableChecksum" class="py-1.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0">
                 <span class="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-1 py-0.5 rounded">
                   0 ✓
                 </span>
@@ -302,7 +332,7 @@
             </tr>
 
             <!-- HÀNG TIÊU ĐỀ: VÁN, ĐIỂM, TÊN NGƯỜI CHƠI (NỀN DỊU MẮT, BẤM VÀO SỬA TÊN) -->
-            <tr id="playerNamesHeaderRow" class="bg-emerald-50/90 border-b-2 border-emerald-200/90 text-xs font-bold text-slate-800 select-none">
+            <tr id="playerNamesHeaderRow" class="bg-emerald-50 border-b-2 border-emerald-200 text-xs font-bold text-slate-800 select-none h-9">
               <!-- Rendered by JS -->
             </tr>
 
@@ -1494,12 +1524,12 @@
       }
       if (eyeText) eyeText.textContent = isVisible ? t('hidePoints') : t('showPoints');
 
-      // Kiểu viền hàng tổng (Không kẻ dọc, viền ngang mờ tinh tế)
-      playerTotalsRow.className = 'bg-slate-100/60 border-b border-slate-200/60';
+      // Kiểu viền hàng tổng (Không kẻ dọc, viền ngang mờ tinh tế, cố định chiều cao 40px)
+      playerTotalsRow.className = 'bg-slate-100 border-b border-slate-200/80 h-10';
       const thTotalFirst = playerTotalsRow.querySelector('th:first-child');
-      if (thTotalFirst) thTotalFirst.className = 'py-2 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0';
+      if (thTotalFirst) thTotalFirst.className = 'py-1.5 px-1 w-10 sm:w-12 text-center text-slate-600 font-bold text-xs shrink-0 border-r-0';
       const thChecksum = document.getElementById('thTableChecksum');
-      if (thChecksum) thChecksum.className = 'py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0';
+      if (thChecksum) thChecksum.className = 'py-1.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center border-r-0';
 
       thTotalsRow.setAttribute('colspan', appState.players.length);
       thTotalsRow.className = 'p-0 border-r-0';
@@ -1536,7 +1566,7 @@
         let leaderCrown = isLeader ? '<span class="text-xs mr-0.5" title="Đang dẫn đầu">👑</span>' : '';
 
         totalsCellsHtml += `
-          <div class="py-2.5 px-1 text-center border-r-0 ${cellBg}">
+          <div class="py-1.5 px-1 text-center border-r-0 ${cellBg}">
             <div class="font-mono text-base sm:text-lg font-extrabold tracking-tight flex items-center justify-center ${textClass}">
               ${leaderCrown}${displayValue}
             </div>
@@ -1548,26 +1578,38 @@
 
       // 2. TẠO HÀNG TIÊU ĐỀ CỘT: VÁN, TỔNG / ĐIỂM, TÊN NGƯỜI CHƠI (NỀN DỊU MẮT THEO CHỦ ĐỀ, CHỮ ĐẬM RÕ NÉT, BỎ KHUNG EDIT TÊN)
       const headerThemeBg = isAccumulate 
-        ? 'bg-indigo-50/90 border-b-2 border-indigo-200/90 text-slate-800' 
-        : 'bg-emerald-50/90 border-b-2 border-emerald-200/90 text-slate-800';
-      playerNamesRow.className = `${headerThemeBg} text-xs font-bold select-none`;
+        ? 'bg-indigo-50 border-b-2 border-indigo-200 text-slate-800' 
+        : 'bg-emerald-50 border-b-2 border-emerald-200 text-slate-800';
+      playerNamesRow.className = `${headerThemeBg} text-xs font-bold select-none h-9`;
+
+      // Cập nhật class mode trên thẻ table để đảm bảo màu nền dính (sticky) đục 100%
+      const tableElem = document.getElementById('mainScoreTable');
+      if (tableElem) {
+        if (isAccumulate) {
+          tableElem.classList.add('mode-accumulate');
+          tableElem.classList.remove('mode-zero_sum');
+        } else {
+          tableElem.classList.add('mode-zero_sum');
+          tableElem.classList.remove('mode-accumulate');
+        }
+      }
 
       const colBTitle = isAccumulate ? (appState.lang === 'en' ? 'Pts' : 'Điểm') : t('colTotal');
       const colLabelColor = isAccumulate ? 'text-indigo-900/80' : 'text-emerald-900/80';
       const playerNameColor = isAccumulate ? 'text-indigo-950' : 'text-emerald-950';
 
       let namesRowHtml = `
-        <th class="py-2.5 px-1 w-10 sm:w-12 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
+        <th class="py-2 px-1 w-10 sm:w-12 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
           ${t('colRound')}
         </th>
-        <th class="py-2.5 px-0.5 sm:px-1 w-14 sm:w-16 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
+        <th class="py-2 px-0.5 sm:px-1 w-14 sm:w-16 text-center font-bold ${colLabelColor} text-xs border-r-0 tracking-wide">
           ${colBTitle}
         </th>
       `;
 
       appState.players.forEach((p, idx) => {
         namesRowHtml += `
-          <th class="py-2.5 px-0.5 sm:px-1 text-center border-r-0">
+          <th class="py-2 px-0.5 sm:px-1 text-center border-r-0">
             <div onclick="openPlayerModal()" class="cursor-pointer hover:opacity-75 active:scale-95 transition" title="${t('tapToEditPlayer')}">
               <span class="block truncate font-extrabold text-xs sm:text-sm ${playerNameColor} px-0.5 tracking-tight">
                 ${p.name}
@@ -1577,7 +1619,7 @@
         `;
       });
 
-      namesRowHtml += `<th class="hidden lg:table-cell py-2.5 px-2 w-16 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
+      namesRowHtml += `<th class="hidden lg:table-cell py-2 px-2 w-16 text-center text-slate-400 font-medium text-[11px] border-r-0">${t('colActions')}</th>`;
       playerNamesRow.innerHTML = namesRowHtml;
     }
 
@@ -1900,6 +1942,14 @@
       function scrollToNewRound(roundNo) {
         const newRow = document.getElementById(`historyRow_${roundNo}`);
         if (!newRow) return;
+
+        const tableScroll = document.getElementById('tableScrollWrapper');
+        if (tableScroll) {
+          tableScroll.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
 
         const headerEl = document.querySelector('header');
         const headerHeight = headerEl ? headerEl.offsetHeight : 60;
